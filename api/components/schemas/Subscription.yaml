@@ -1,0 +1,25 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    readOnly: true
+  email:
+    type: string
+    format: email
+  currency_pair:
+    type: string
+    example: "USD_RUB"
+  threshold:
+    type: number
+    format: float
+  created_at:
+    type: string
+    format: date-time
+    readOnly: true
+required:
+  - id
+  - email
+  - currency_pair
+  - threshold
+  - created_at

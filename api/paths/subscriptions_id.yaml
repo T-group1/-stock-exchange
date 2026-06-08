@@ -1,0 +1,13 @@
+delete:
+  operationId: deleteSubscription
+  summary: Удалить подписку (отписаться от уведомлений)
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    "204":
+      description: Подписка успешно удалена
