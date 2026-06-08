@@ -1,0 +1,12 @@
+get:
+  operationId: getRates
+  summary: Получить актуальные курсы валют
+  responses:
+    '200':
+      description: Успешный ответ со списком курсов
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Rate.yaml

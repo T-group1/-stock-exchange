@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: Currency Aggregator API
+  version: 0.1.0
+  description: API для агрегатора курсов валют и системы уведомлений.
+servers:
+  - url: http://localhost:8080
+    description: local
+paths:
+  /rates:
+    $ref: paths/rates.yaml
+  /subscriptions:
+    $ref: paths/subscriptions.yaml
+components:
+  schemas:
+    Rate:
+      $ref: components/schemas/Rate.yaml
+    SubscriptionCreate:
+      $ref: components/schemas/SubscriptionCreate.yaml
