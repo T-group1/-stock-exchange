@@ -2,7 +2,7 @@ get:
   operationId: listSubscriptions
   summary: Получить список всех активных подписок на уведомления
   responses:
-    "200":
+    '200':
       description: Список подписок
       content:
         application/json:
@@ -20,5 +20,5 @@ post:
         schema:
           $ref: ../components/schemas/SubscriptionCreate.yaml
   responses:
-    "201":
+    '201':
       description: Подписка успешно создана

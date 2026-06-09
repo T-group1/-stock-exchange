@@ -6,7 +6,7 @@ properties:
     readOnly: true
   currency_pair:
     type: string
-    example: "USD/RUB"
+    example: USD/RUB
   rate_value:
     type: number
     format: float

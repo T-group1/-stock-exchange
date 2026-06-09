@@ -9,7 +9,7 @@ properties:
     format: email
   currency_pair:
     type: string
-    example: "USD_RUB"
+    example: USD_RUB
   threshold:
     type: number
     format: float
