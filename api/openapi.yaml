@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   title: Currency Aggregator API
   version: 0.1.0
@@ -9,11 +9,22 @@ servers:
 paths:
   /rates:
     $ref: paths/rates.yaml
+  /rates/{pair}:
+    $ref: paths/rates_{pair}.yaml
   /subscriptions:
     $ref: paths/subscriptions.yaml
+  /subscriptions/{id}:
+    $ref: paths/subscriptions_{id}.yaml
 components:
   schemas:
     Rate:
       $ref: components/schemas/Rate.yaml
+    Subscription:
+      $ref: components/schemas/Subscription.yaml
     SubscriptionCreate:
       $ref: components/schemas/SubscriptionCreate.yaml
+tags:
+  - name: rates
+    description: Получение актуальных курсов валют и история изменений.
+  - name: subscriptions
+    description: Управление подписками на уведомления о курсах (Alert Service).

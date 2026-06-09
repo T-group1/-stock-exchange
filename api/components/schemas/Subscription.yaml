@@ -4,18 +4,22 @@ properties:
     type: string
     format: uuid
     readOnly: true
+  email:
+    type: string
+    format: email
   currency_pair:
     type: string
-    example: USD/RUB
-  rate_value:
+    example: USD_RUB
+  threshold:
     type: number
     format: float
-  updated_at:
+  created_at:
     type: string
     format: date-time
     readOnly: true
 required:
   - id
+  - email
   - currency_pair
-  - rate_value
-  - updated_at
+  - threshold
+  - created_at

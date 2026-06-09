@@ -1,3 +1,15 @@
+get:
+  operationId: listSubscriptions
+  summary: Получить список всех активных подписок на уведомления
+  responses:
+    '200':
+      description: Список подписок
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Subscription.yaml
 post:
   operationId: createSubscription
   summary: Создать подписку на уведомление о курсе
