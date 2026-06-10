@@ -1,21 +1,24 @@
 type: object
 properties:
-  id:
+  pair:
     type: string
-    format: uuid
-    readOnly: true
-  currency_pair:
-    type: string
-    example: USD/RUB
-  rate_value:
+    example: USD_RUB
+  rate:
     type: number
-    format: float
-  updated_at:
+    format: double
+    example: 92.45
+  date:
     type: string
-    format: date-time
-    readOnly: true
+    format: date
+    example: 2024-01-15
+  source:
+    description: Источник данных
+    type: string
+    enum:
+      - cb_rf
+      - calculated
 required:
-  - id
-  - currency_pair
-  - rate_value
-  - updated_at
+  - pair
+  - rate
+  - date
+  - source

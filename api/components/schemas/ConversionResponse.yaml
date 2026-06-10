@@ -1,0 +1,23 @@
+type: object
+properties:
+  from:
+    type: string
+  to:
+    type: string
+  amount:
+    type: number
+    format: double
+  result:
+    type: number
+    format: double
+  applied_rate:
+    type: number
+    format: double
+  date:
+    type: string
+    format: date
+  calculation_method:
+    type: string
+    enum:
+      - direct
+      - via_rub

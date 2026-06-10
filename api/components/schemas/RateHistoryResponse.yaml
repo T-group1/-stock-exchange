@@ -1,0 +1,15 @@
+type: object
+properties:
+  pair:
+    type: string
+  data:
+    type: array
+    items:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        rate:
+          type: number
+          format: double

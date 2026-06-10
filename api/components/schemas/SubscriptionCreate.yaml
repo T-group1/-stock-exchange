@@ -1,18 +1,17 @@
 type: object
 properties:
-  email:
-    description: Email, куда придет алерт
-    type: string
-    format: email
   currency_pair:
-    description: Какую валютную пару отслеживать
     type: string
     example: USD/RUB
-  threshold:
-    description: Пороговое значение курса для срабатывания алерта
+  rate_value:
     type: number
-    format: float
+    format: double
+  condition:
+    type: string
+    enum:
+      - above
+      - below
 required:
-  - email
   - currency_pair
-  - threshold
+  - rate_value
+  - condition

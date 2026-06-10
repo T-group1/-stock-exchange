@@ -1,0 +1,28 @@
+post:
+  operationId: registerUser
+  summary: Регистрация нового пользователя
+  description: Создаёт нового пользователя и возвращает JWT токен
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/RegisterRequest.yaml
+  responses:
+    '201':
+      description: Пользователь зарегистрирован
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AuthResponse.yaml
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '409':
+      description: Пользователь с таким email уже существует
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+  security: []
+  tags:
+    - auth

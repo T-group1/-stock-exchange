@@ -1,19 +1,55 @@
 get:
-  operationId: getRateByPair
-  summary: Получить историю курса для конкретной валютной пары
+  operationId: getRateHistory
+  summary: История курса для валютной пары
+  description: |
+    Возвращает исторические данные для построения графика.
+    Поддерживает прямые пары (USD/RUB) и кросс-курсы (EUR/USD).
   parameters:
     - name: pair
       in: path
+      description: Валютная пара в формате BASE_QUOTE
       required: true
       schema:
         type: string
-      example: USD_RUB
+      example: EUR_USD
+    - name: start_date
+      in: query
+      description: Начальная дата периода
+      required: false
+      schema:
+        type: string
+        format: date
+    - name: end_date
+      in: query
+      description: Конечная дата периода
+      required: false
+      schema:
+        type: string
+        format: date
+    - name: fill_gaps
+      in: query
+      description: Заполнять пропуски значением предыдущего дня
+      required: false
+      schema:
+        type: boolean
+        default: false
   responses:
     '200':
-      description: Успешный ответ
+      description: Исторические данные
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: ../components/schemas/Rate.yaml
+            $ref: ../components/schemas/RateHistoryResponse.yaml
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '404':
+      description: Валютная пара не найдена
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '500':
+      $ref: ../components/responses/ServerError.yaml
+  security: []
+  tags:
+    - rates

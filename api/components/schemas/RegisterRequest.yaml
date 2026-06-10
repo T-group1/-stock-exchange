@@ -1,0 +1,18 @@
+type: object
+properties:
+  email:
+    type: string
+    format: email
+    example: user@example.com
+  password:
+    type: string
+    format: password
+    example: securePassword123
+    minLength: 8
+  name:
+    type: string
+    example: Иван Иванов
+required:
+  - email
+  - password
+  - name

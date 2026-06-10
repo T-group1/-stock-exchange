@@ -8,7 +8,83 @@ info:
 servers:
   - url: http://localhost:8080
     description: Local development
-
+paths:
+  /auth/register:
+    $ref: paths/auth_register.yaml
+  /auth/login:
+    $ref: paths/auth_login.yaml
+  /auth/logout:
+    $ref: paths/auth_logout.yaml
+  /auth/refresh:
+    $ref: paths/auth_refresh.yaml
+  /auth/me:
+    $ref: paths/auth_me.yaml
+  /currencies:
+    $ref: paths/currencies.yaml
+  /rates:
+    $ref: paths/rates.yaml
+  /rates/{pair}:
+    $ref: paths/rates_{pair}.yaml
+  /convert:
+    $ref: paths/convert.yaml
+  /subscriptions:
+    $ref: paths/subscriptions.yaml
+  /subscriptions/{id}:
+    $ref: paths/subscriptions_{id}.yaml
+  /notifications:
+    $ref: paths/notifications.yaml
+  /notifications/{id}/read:
+    $ref: paths/notifications_{id}_read.yaml
+  /notifications/settings:
+    $ref: paths/notifications_settings.yaml
+components:
+  schemas:
+    RegisterRequest:
+      $ref: components/schemas/RegisterRequest.yaml
+    LoginRequest:
+      $ref: components/schemas/LoginRequest.yaml
+    RefreshTokenRequest:
+      $ref: components/schemas/RefreshTokenRequest.yaml
+    AuthResponse:
+      $ref: components/schemas/AuthResponse.yaml
+    User:
+      $ref: components/schemas/User.yaml
+    Currency:
+      $ref: components/schemas/Currency.yaml
+    Rate:
+      $ref: components/schemas/Rate.yaml
+    RatesResponse:
+      $ref: components/schemas/RatesResponse.yaml
+    RateHistoryResponse:
+      $ref: components/schemas/RateHistoryResponse.yaml
+    ConversionRequest:
+      $ref: components/schemas/ConversionRequest.yaml
+    ConversionResponse:
+      $ref: components/schemas/ConversionResponse.yaml
+    Subscription:
+      $ref: components/schemas/Subscription.yaml
+    SubscriptionCreate:
+      $ref: components/schemas/SubscriptionCreate.yaml
+    Notification:
+      $ref: components/schemas/Notification.yaml
+    NotificationsResponse:
+      $ref: components/schemas/NotificationsResponse.yaml
+    NotificationSettings:
+      $ref: components/schemas/NotificationSettings.yaml
+    NotificationSettingsUpdate:
+      $ref: components/schemas/NotificationSettingsUpdate.yaml
+    Error:
+      $ref: components/schemas/Error.yaml
+  responses:
+    ValidationError:
+      $ref: components/responses/ValidationError.yaml
+    UnauthorizedError:
+      $ref: components/responses/UnauthorizedError.yaml
+    ServerError:
+      $ref: components/responses/ServerError.yaml
+  securitySchemes:
+    BearerAuth:
+      $ref: components/securitySchemes/BearerAuth.yaml
 tags:
   - name: auth
     description: Аутентификация и регистрация
@@ -22,761 +98,5 @@ tags:
     description: Управление уведомлениями о курсах
   - name: notifications
     description: Получение и управление уведомлениями
-
 security:
   - BearerAuth: []
-
-paths:
-  # ==================== AUTH ====================
-  /auth/register:
-    post:
-      tags: [auth]
-      summary: Регистрация нового пользователя
-      description: Создаёт нового пользователя и возвращает JWT токен
-      operationId: registerUser
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: Пользователь зарегистрирован
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '409':
-          description: Пользователь с таким email уже существует
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/login:
-    post:
-      tags: [auth]
-      summary: Вход в систему
-      description: Аутентификация по email и паролю, возвращает JWT токен
-      operationId: loginUser
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Успешный вход
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: Неверный email или пароль
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/logout:
-    post:
-      tags: [auth]
-      summary: Выход из системы
-      description: Инвалидирует текущий JWT токен
-      operationId: logoutUser
-      responses:
-        '204':
-          description: Успешный выход
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /auth/refresh:
-    post:
-      tags: [auth]
-      summary: Обновление токена
-      description: Обновляет JWT токен по refresh token
-      operationId: refreshToken
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenRequest'
-      responses:
-        '200':
-          description: Токен обновлён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: Недействительный refresh token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /auth/me:
-    get:
-      tags: [auth]
-      summary: Получить текущего пользователя
-      description: Возвращает информацию о текущем авторизованном пользователе
-      operationId: getCurrentUser
-      responses:
-        '200':
-          description: Информация о пользователе
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  # ==================== CURRENCIES ====================
-  /currencies:
-    get:
-      tags: [currencies]
-      summary: Список доступных валют
-      description: Возвращает все валюты, доступные в ЦБ РФ
-      operationId: getCurrencies
-      security: []
-      responses:
-        '200':
-          description: Список валют
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Currency'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  # ==================== RATES ====================
-  /rates:
-    get:
-      tags: [rates]
-      summary: Текущие курсы всех валют
-      description: Возвращает курсы на последнюю доступную дату
-      operationId: getCurrentRates
-      security: []
-      responses:
-        '200':
-          description: Список курсов
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RatesResponse'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /rates/{pair}:
-    get:
-      tags: [rates]
-      summary: История курса для валютной пары
-      description: |
-        Возвращает исторические данные для построения графика.
-        Поддерживает прямые пары (USD/RUB) и кросс-курсы (EUR/USD).
-      operationId: getRateHistory
-      security: []
-      parameters:
-        - name: pair
-          in: path
-          required: true
-          schema:
-            type: string
-          example: EUR_USD
-          description: Валютная пара в формате BASE_QUOTE
-        - name: start_date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          description: Начальная дата периода
-        - name: end_date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          description: Конечная дата периода
-        - name: fill_gaps
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-          description: Заполнять пропуски значением предыдущего дня
-      responses:
-        '200':
-          description: Исторические данные
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RateHistoryResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '404':
-          description: Валютная пара не найдена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  # ==================== CONVERSION ====================
-  /convert:
-    post:
-      tags: [conversion]
-      summary: Конвертация валют
-      description: Конвертирует сумму из одной валюты в другую
-      operationId: convertCurrency
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConversionRequest'
-      responses:
-        '200':
-          description: Результат конвертации
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConversionResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  # ==================== SUBSCRIPTIONS ====================
-  /subscriptions:
-    get:
-      tags: [subscriptions]
-      summary: Список подписок
-      description: Возвращает все активные подписки текущего пользователя
-      operationId: listSubscriptions
-      responses:
-        '200':
-          description: Список подписок
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Subscription'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-    post:
-      tags: [subscriptions]
-      summary: Создать подписку
-      description: Создаёт новую подписку на уведомление о курсе
-      operationId: createSubscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubscriptionCreate'
-      responses:
-        '201':
-          description: Подписка создана
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /subscriptions/{id}:
-    delete:
-      tags: [subscriptions]
-      summary: Удалить подписку
-      operationId: deleteSubscription
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Подписка удалена
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Подписка не найдена
-
-  # ==================== NOTIFICATIONS ====================
-  /notifications:
-    get:
-      tags: [notifications]
-      summary: Список уведомлений
-      description: Возвращает уведомления текущего пользователя
-      operationId: listNotifications
-      parameters:
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-            maximum: 100
-          description: Количество уведомлений
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 0
-          description: Смещение для пагинации
-        - name: unread_only
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-          description: Только непрочитанные уведомления
-      responses:
-        '200':
-          description: Список уведомлений
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationsResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /notifications/{id}/read:
-    post:
-      tags: [notifications]
-      summary: Пометить уведомление как прочитанное
-      operationId: markNotificationAsRead
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Уведомление помечено
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Notification'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Уведомление не найдено
-
-  /notifications/settings:
-    get:
-      tags: [notifications]
-      summary: Получить настройки уведомлений
-      operationId: getNotificationSettings
-      responses:
-        '200':
-          description: Настройки уведомлений
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationSettings'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-    put:
-      tags: [notifications]
-      summary: Обновить настройки уведомлений
-      operationId: updateNotificationSettings
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NotificationSettingsUpdate'
-      responses:
-        '200':
-          description: Настройки обновлены
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotificationSettings'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-components:
-  # ==================== SECURITY SCHEMES ====================
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT токен для аутентификации
-
-  # ==================== SCHEMAS ====================
-  schemas:
-    # --- AUTH ---
-    RegisterRequest:
-      type: object
-      required: [email, password, name]
-      properties:
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          minLength: 8
-          example: securePassword123
-        name:
-          type: string
-          example: Иван Иванов
-
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-          example: user@example.com
-        password:
-          type: string
-          format: password
-          example: securePassword123
-
-    RefreshTokenRequest:
-      type: object
-      required: [refresh_token]
-      properties:
-        refresh_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-    AuthResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-          description: JWT токен для доступа к API
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refresh_token:
-          type: string
-          description: Токен для обновления access_token
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        token_type:
-          type: string
-          example: Bearer
-        expires_in:
-          type: integer
-          description: Время жизни токена в секундах
-          example: 3600
-        user:
-          $ref: '#/components/schemas/User'
-      required: [access_token, refresh_token, token_type, expires_in, user]
-
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-          format: email
-        name:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-      required: [id, email, name, created_at]
-
-    # --- CURRENCIES ---
-    Currency:
-      type: object
-      properties:
-        code:
-          type: string
-          example: USD
-        name:
-          type: string
-          example: Доллар США
-        nominal:
-          type: integer
-          description: Номинал (ЦБ РФ публикует курсы за N единиц)
-          example: 1
-      required: [code, name, nominal]
-
-    # --- RATES ---
-    Rate:
-      type: object
-      properties:
-        pair:
-          type: string
-          example: USD_RUB
-        rate:
-          type: number
-          format: double
-          example: 92.45
-        date:
-          type: string
-          format: date
-          example: "2024-01-15"
-        source:
-          type: string
-          enum: [cb_rf, calculated]
-          description: Источник данных
-      required: [pair, rate, date, source]
-
-    RatesResponse:
-      type: object
-      properties:
-        date:
-          type: string
-          format: date
-        rates:
-          type: array
-          items:
-            $ref: '#/components/schemas/Rate'
-
-    RateHistoryResponse:
-      type: object
-      properties:
-        pair:
-          type: string
-        data:
-          type: array
-          items:
-            type: object
-            properties:
-              date:
-                type: string
-                format: date
-              rate:
-                type: number
-                format: double
-
-    # --- CONVERSION ---
-    ConversionRequest:
-      type: object
-      required: [from, to, amount]
-      properties:
-        from:
-          type: string
-          example: EUR
-        to:
-          type: string
-          example: USD
-        amount:
-          type: number
-          format: double
-          minimum: 0.01
-          example: 100.00
-        date:
-          type: string
-          format: date
-          nullable: true
-          description: Дата для исторической конвертации
-
-    ConversionResponse:
-      type: object
-      properties:
-        from:
-          type: string
-        to:
-          type: string
-        amount:
-          type: number
-          format: double
-        result:
-          type: number
-          format: double
-        applied_rate:
-          type: number
-          format: double
-        date:
-          type: string
-          format: date
-        calculation_method:
-          type: string
-          enum: [direct, via_rub]
-
-    # --- SUBSCRIPTIONS ---
-    Subscription:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        user_id:
-          type: string
-          format: uuid
-        currency_pair:
-          type: string
-          example: USD/RUB
-        rate_value:
-          type: number
-          format: double
-        condition:
-          type: string
-          enum: [above, below]
-        is_active:
-          type: boolean
-          default: true
-        created_at:
-          type: string
-          format: date-time
-        triggered_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Время срабатывания уведомления
-      required: [id, user_id, currency_pair, rate_value, condition, created_at]
-
-    SubscriptionCreate:
-      type: object
-      required: [currency_pair, rate_value, condition]
-      properties:
-        currency_pair:
-          type: string
-          example: USD/RUB
-        rate_value:
-          type: number
-          format: double
-        condition:
-          type: string
-          enum: [above, below]
-
-    # --- NOTIFICATIONS ---
-    Notification:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        user_id:
-          type: string
-          format: uuid
-        subscription_id:
-          type: string
-          format: uuid
-          nullable: true
-        type:
-          type: string
-          enum: [rate_alert, system, info]
-          description: Тип уведомления
-        title:
-          type: string
-          example: Курс USD/RUB достиг 92.50
-        message:
-          type: string
-          example: Установленный вами курс USD/RUB достиг значения 92.50
-        is_read:
-          type: boolean
-          default: false
-        created_at:
-          type: string
-          format: date-time
-      required: [id, user_id, type, title, message, is_read, created_at]
-
-    NotificationsResponse:
-      type: object
-      properties:
-        notifications:
-          type: array
-          items:
-            $ref: '#/components/schemas/Notification'
-        total:
-          type: integer
-          description: Общее количество уведомлений
-        unread_count:
-          type: integer
-          description: Количество непрочитанных уведомлений
-
-    NotificationSettings:
-      type: object
-      properties:
-        user_id:
-          type: string
-          format: uuid
-        email_enabled:
-          type: boolean
-          default: true
-          description: Отправлять уведомления на email
-        browser_enabled:
-          type: boolean
-          default: true
-          description: Показывать уведомления в браузере
-        quiet_hours_start:
-          type: string
-          example: "22:00"
-          description: Начало тихих часов (без уведомлений)
-        quiet_hours_end:
-          type: string
-          example: "08:00"
-          description: Конец тихих часов
-      required: [user_id, email_enabled, browser_enabled]
-
-    NotificationSettingsUpdate:
-      type: object
-      properties:
-        email_enabled:
-          type: boolean
-        browser_enabled:
-          type: boolean
-        quiet_hours_start:
-          type: string
-        quiet_hours_end:
-          type: string
-
-    # --- ERRORS ---
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-          example: VALIDATION_ERROR
-        message:
-          type: string
-          example: Invalid email format
-        code:
-          type: string
-          example: INVALID_EMAIL
-
-  # ==================== RESPONSES ====================
-  responses:
-    ValidationError:
-      description: Ошибка валидации
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    UnauthorizedError:
-      description: Требуется аутентификация
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    ServerError:
-      description: Внутренняя ошибка сервера
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
