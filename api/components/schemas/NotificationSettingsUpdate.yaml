@@ -1,0 +1,10 @@
+type: object
+properties:
+  email_enabled:
+    type: boolean
+  browser_enabled:
+    type: boolean
+  quiet_hours_start:
+    type: string
+  quiet_hours_end:
+    type: string

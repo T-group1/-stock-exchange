@@ -1,0 +1,38 @@
+get:
+  operationId: listNotifications
+  summary: Список уведомлений
+  description: Возвращает уведомления текущего пользователя
+  parameters:
+    - name: limit
+      in: query
+      description: Количество уведомлений
+      required: false
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    - name: offset
+      in: query
+      description: Смещение для пагинации
+      required: false
+      schema:
+        type: integer
+        default: 0
+    - name: unread_only
+      in: query
+      description: Только непрочитанные уведомления
+      required: false
+      schema:
+        type: boolean
+        default: false
+  responses:
+    '200':
+      description: Список уведомлений
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationsResponse.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - notifications

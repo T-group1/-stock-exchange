@@ -1,30 +1,108 @@
 openapi: 3.0.3
 info:
-  title: Currency Aggregator API
-  version: 0.1.0
-  description: API для агрегатора курсов валют и системы уведомлений.
+  title: Currency Exchange API
+  version: 1.0.0
+  description: |
+    API для просмотра курсов валют, конвертации и построения графиков.
+    Источник данных: ЦБ РФ. Все кросс-курсы рассчитываются автоматически через рубль.
 servers:
   - url: http://localhost:8080
-    description: local
+    description: Local development
 paths:
+  /auth/register:
+    $ref: paths/auth_register.yaml
+  /auth/login:
+    $ref: paths/auth_login.yaml
+  /auth/logout:
+    $ref: paths/auth_logout.yaml
+  /auth/refresh:
+    $ref: paths/auth_refresh.yaml
+  /auth/me:
+    $ref: paths/auth_me.yaml
+  /currencies:
+    $ref: paths/currencies.yaml
   /rates:
     $ref: paths/rates.yaml
   /rates/{pair}:
     $ref: paths/rates_{pair}.yaml
+  /convert:
+    $ref: paths/convert.yaml
   /subscriptions:
     $ref: paths/subscriptions.yaml
   /subscriptions/{id}:
     $ref: paths/subscriptions_{id}.yaml
+  /notifications:
+    $ref: paths/notifications.yaml
+  /notifications/{id}/read:
+    $ref: paths/notifications_{id}_read.yaml
+  /notifications/settings:
+    $ref: paths/notifications_settings.yaml
+  /user/pairs:
+    $ref: paths/user_pairs.yaml
 components:
   schemas:
+    RegisterRequest:
+      $ref: components/schemas/RegisterRequest.yaml
+    LoginRequest:
+      $ref: components/schemas/LoginRequest.yaml
+    RefreshTokenRequest:
+      $ref: components/schemas/RefreshTokenRequest.yaml
+    AuthResponse:
+      $ref: components/schemas/AuthResponse.yaml
+    User:
+      $ref: components/schemas/User.yaml
+    Currency:
+      $ref: components/schemas/Currency.yaml
     Rate:
       $ref: components/schemas/Rate.yaml
+    RatesResponse:
+      $ref: components/schemas/RatesResponse.yaml
+    RateHistoryResponse:
+      $ref: components/schemas/RateHistoryResponse.yaml
+    ConversionRequest:
+      $ref: components/schemas/ConversionRequest.yaml
+    ConversionResponse:
+      $ref: components/schemas/ConversionResponse.yaml
     Subscription:
       $ref: components/schemas/Subscription.yaml
     SubscriptionCreate:
       $ref: components/schemas/SubscriptionCreate.yaml
+    Notification:
+      $ref: components/schemas/Notification.yaml
+    NotificationsResponse:
+      $ref: components/schemas/NotificationsResponse.yaml
+    NotificationSettings:
+      $ref: components/schemas/NotificationSettings.yaml
+    NotificationSettingsUpdate:
+      $ref: components/schemas/NotificationSettingsUpdate.yaml
+    UserPairsUpdate:
+      $ref: components/schemas/UserPairsUpdate.yaml
+    Error:
+      $ref: components/schemas/Error.yaml
+  responses:
+    ValidationError:
+      $ref: components/responses/ValidationError.yaml
+    UnauthorizedError:
+      $ref: components/responses/UnauthorizedError.yaml
+    ServerError:
+      $ref: components/responses/ServerError.yaml
+  securitySchemes:
+    BearerAuth:
+      $ref: components/securitySchemes/BearerAuth.yaml
 tags:
+  - name: auth
+    description: Аутентификация и регистрация
+  - name: currencies
+    description: Справочник валют
   - name: rates
-    description: Получение актуальных курсов валют и история изменений.
+    description: Текущие и исторические курсы
+  - name: conversion
+    description: Конвертация валют
   - name: subscriptions
-    description: Управление подписками на уведомления о курсах (Alert Service).
+    description: Управление уведомлениями о курсах
+  - name: notifications
+    description: Получение и управление уведомлениями
+  - name: user
+    description: Пользовательские настройки и предпочтения
+security:
+  - BearerAuth: []

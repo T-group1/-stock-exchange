@@ -1,0 +1,26 @@
+post:
+  operationId: refreshToken
+  summary: Обновление токена
+  description: Обновляет JWT токен по refresh token
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/RefreshTokenRequest.yaml
+  responses:
+    '200':
+      description: Токен обновлён
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AuthResponse.yaml
+    '401':
+      description: Недействительный refresh token
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+  security: []
+  tags:
+    - auth
