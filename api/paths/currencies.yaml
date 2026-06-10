@@ -1,0 +1,18 @@
+get:
+  operationId: getCurrencies
+  summary: Список доступных валют
+  description: Возвращает все валюты, доступные в ЦБ РФ
+  responses:
+    '200':
+      description: Список валют
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Currency.yaml
+    '500':
+      $ref: ../components/responses/ServerError.yaml
+  security: []
+  tags:
+    - currencies
