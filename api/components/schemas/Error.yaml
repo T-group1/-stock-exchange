@@ -1,0 +1,11 @@
+type: object
+properties:
+  error:
+    type: string
+    example: VALIDATION_ERROR
+  message:
+    type: string
+    example: Invalid email format
+  code:
+    type: string
+    example: INVALID_EMAIL

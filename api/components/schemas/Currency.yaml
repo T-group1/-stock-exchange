@@ -1,0 +1,16 @@
+type: object
+properties:
+  code:
+    type: string
+    example: USD
+  name:
+    type: string
+    example: Доллар США
+  nominal:
+    description: Номинал (ЦБ РФ публикует курсы за N единиц)
+    type: integer
+    example: 1
+required:
+  - code
+  - name
+  - nominal

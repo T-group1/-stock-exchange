@@ -1,0 +1,39 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+  user_id:
+    type: string
+    format: uuid
+  subscription_id:
+    type: string
+    format: uuid
+    nullable: true
+  type:
+    description: Тип уведомления
+    type: string
+    enum:
+      - rate_alert
+      - system
+      - info
+  title:
+    type: string
+    example: Курс USD/RUB достиг 92.50
+  message:
+    type: string
+    example: Установленный вами курс USD/RUB достиг значения 92.50
+  is_read:
+    type: boolean
+    default: false
+  created_at:
+    type: string
+    format: date-time
+required:
+  - id
+  - user_id
+  - type
+  - title
+  - message
+  - is_read
+  - created_at
