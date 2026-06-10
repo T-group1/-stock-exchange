@@ -1,0 +1,22 @@
+type: object
+properties:
+  from:
+    type: string
+    example: EUR
+  to:
+    type: string
+    example: USD
+  amount:
+    type: number
+    format: double
+    example: 100
+    minimum: 0.01
+  date:
+    description: Дата для исторической конвертации (null = текущий курс)
+    type: string
+    format: date
+    nullable: true
+required:
+  - from
+  - to
+  - amount

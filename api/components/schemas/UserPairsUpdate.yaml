@@ -1,0 +1,13 @@
+type: object
+properties:
+  pairs:
+    description: Список кодов валют в новом порядке
+    type: array
+    items:
+      type: string
+    example:
+      - USD_RUB
+      - CNY_RUB
+      - EUR_RUB
+required:
+  - pairs

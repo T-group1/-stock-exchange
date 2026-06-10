@@ -1,0 +1,24 @@
+post:
+  operationId: convertCurrency
+  summary: Конвертация валют
+  description: Конвертирует сумму из одной валюты в другую
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ConversionRequest.yaml
+  responses:
+    '200':
+      description: Результат конвертации
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ConversionResponse.yaml
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '500':
+      $ref: ../components/responses/ServerError.yaml
+  security: []
+  tags:
+    - conversion
