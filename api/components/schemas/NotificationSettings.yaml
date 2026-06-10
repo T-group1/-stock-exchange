@@ -1,0 +1,25 @@
+type: object
+properties:
+  user_id:
+    type: string
+    format: uuid
+  email_enabled:
+    description: Отправлять уведомления на email
+    type: boolean
+    default: true
+  browser_enabled:
+    description: Показывать уведомления в браузере
+    type: boolean
+    default: true
+  quiet_hours_start:
+    description: Начало тихих часов (без уведомлений)
+    type: string
+    example: 22:00
+  quiet_hours_end:
+    description: Конец тихих часов
+    type: string
+    example: 08:00
+required:
+  - user_id
+  - email_enabled
+  - browser_enabled

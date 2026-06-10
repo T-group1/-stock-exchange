@@ -1,0 +1,26 @@
+post:
+  operationId: loginUser
+  summary: Вход в систему
+  description: Аутентификация по email и паролю, возвращает JWT токен
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/LoginRequest.yaml
+  responses:
+    '200':
+      description: Успешный вход
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AuthResponse.yaml
+    '401':
+      description: Неверный email или пароль
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+  security: []
+  tags:
+    - auth

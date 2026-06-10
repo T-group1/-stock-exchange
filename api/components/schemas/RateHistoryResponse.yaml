@@ -1,0 +1,18 @@
+type: object
+properties:
+  pair:
+    type: string
+  period:
+    description: Запрошенный период
+    type: string
+  data:
+    type: array
+    items:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        rate:
+          type: number
+          format: double

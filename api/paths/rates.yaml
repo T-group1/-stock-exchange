@@ -1,12 +1,16 @@
 get:
-  operationId: getRates
-  summary: Получить актуальные курсы валют
+  operationId: getCurrentRates
+  summary: Текущие курсы всех валют
+  description: Возвращает курсы на последнюю доступную дату
   responses:
     '200':
-      description: Успешный ответ со списком курсов
+      description: Список курсов
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: ../components/schemas/Rate.yaml
+            $ref: ../components/schemas/RatesResponse.yaml
+    '500':
+      $ref: ../components/responses/ServerError.yaml
+  security: []
+  tags:
+    - rates
