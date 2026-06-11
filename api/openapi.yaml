@@ -24,17 +24,17 @@ paths:
   /rates:
     $ref: paths/rates.yaml
   /rates/{pair}:
-    $ref: paths/rates_{pair}.yaml
+    $ref: paths/rates_pair.yaml
   /convert:
     $ref: paths/convert.yaml
   /subscriptions:
     $ref: paths/subscriptions.yaml
   /subscriptions/{id}:
-    $ref: paths/subscriptions_{id}.yaml
+    $ref: paths/subscriptions_id.yaml
   /notifications:
     $ref: paths/notifications.yaml
   /notifications/{id}/read:
-    $ref: paths/notifications_{id}_read.yaml
+    $ref: paths/notifications_id_read.yaml
   /notifications/settings:
     $ref: paths/notifications_settings.yaml
   /user/pairs:
