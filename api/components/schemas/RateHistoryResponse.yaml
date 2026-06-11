@@ -11,8 +11,10 @@ properties:
       type: object
       properties:
         date:
-          type: string
-          format: date
+          description: Дата исторического курса для точки на графике (Unix timestamp в секундах)
+          type: integer
+          format: int64
+          example: 1718100000
         rate:
           type: number
           format: double
