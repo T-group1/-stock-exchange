@@ -21,12 +21,15 @@ properties:
     type: boolean
     default: true
   created_at:
-    type: string
-    format: date-time
+    description: Unix timestamp в секундах
+    type: integer
+    format: int64
+    example: 1718100000
   triggered_at:
-    description: Время срабатывания уведомления
-    type: string
-    format: date-time
+    description: Время срабатывания уведомления (Unix timestamp в секундах)
+    type: integer
+    format: int64
+    example: 1718150000
     nullable: true
 required:
   - id
