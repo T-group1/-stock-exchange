@@ -4,31 +4,27 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/big"
 	"time"
 
-	"T_Project/internal/db" // Путь к твоему сгенерированному пакету
-	
-	// Правильные импорты драйвера pgx v5
+	"T_Project/internal/db"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func main() {
 	ctx := context.Background()
-
-	// 1. Строка подключения к твоей базе в Docker
 	connStr := "postgres://rates_admin:rates_secure_pass@localhost:5432/rates_db?sslmode=disable"
 
-	// 2. Устанавливаем соединение с СУБД (одиночное подключение)
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 	}
 	defer conn.Close(ctx)
 
-	// 3. Инициализируем сгенерированный sqlc клиент
 	queries := db.New(conn)
 
-	// 4. ТЕСТ 1: Пробуем вставить новую валюту (например, Юань)
+	// ТЕСТ 1: Вставка валюты
 	err = queries.InsertCurrency(ctx, db.InsertCurrencyParams{
 		Code: "CNY",
 		Name: "Китайский юань",
@@ -37,11 +33,18 @@ func main() {
 		log.Printf("Валюта уже есть или произошла ошибка: %v", err)
 	}
 
-	// 5. ТЕСТ 2: Имитируем работу Вовы Баркина (запись курса доллара на сегодня)
+	// ТЕСТ 2: Запись курса доллара с правильными типами pgtype
 	testRate := db.SaveCurrencyRateParams{
-		CurrencyCode: "USD",
-		Rate:         92.4500, // Тестовый курс
-		RateDate:     time.Now(),
+		CurrencyCode: pgtype.Text{
+			String: "USD",
+			Valid:  true,
+		},
+		Rate: pgtype.Numeric{
+			Int:   big.NewInt(924500),
+			Exp:   -4,
+			Valid: true,
+		},
+		RateDate: time.Now(),
 	}
 
 	err = queries.SaveCurrencyRate(ctx, testRate)

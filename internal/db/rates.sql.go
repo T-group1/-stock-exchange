@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -18,7 +19,7 @@ VALUES ($1, $2, $3, $4)
 
 type CreateAlertRuleParams struct {
 	UserID        int64
-	CurrencyCode  *string
+	CurrencyCode  string
 	TargetRate    pgtype.Numeric
 	ConditionType string
 }
@@ -42,7 +43,7 @@ WHERE is_active = true
 type GetActiveAlertRulesRow struct {
 	ID            int64
 	UserID        int64
-	CurrencyCode  *string
+	CurrencyCode  string
 	TargetRate    pgtype.Numeric
 	ConditionType string
 }
@@ -80,9 +81,9 @@ ORDER BY currency_code, rate_date DESC
 `
 
 type GetLatestRatesRow struct {
-	CurrencyCode *string
+	CurrencyCode string
 	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
+	RateDate     time.Time
 }
 
 func (q *Queries) GetLatestRates(ctx context.Context) ([]GetLatestRatesRow, error) {
@@ -114,10 +115,10 @@ ORDER BY rate_date ASC
 
 type GetRatesHistoryRow struct {
 	Rate     pgtype.Numeric
-	RateDate pgtype.Date
+	RateDate time.Time
 }
 
-func (q *Queries) GetRatesHistory(ctx context.Context, currencyCode *string) ([]GetRatesHistoryRow, error) {
+func (q *Queries) GetRatesHistory(ctx context.Context, currencyCode string) ([]GetRatesHistoryRow, error) {
 	rows, err := q.db.Query(ctx, getRatesHistory, currencyCode)
 	if err != nil {
 		return nil, err
@@ -161,9 +162,9 @@ DO UPDATE SET rate = EXCLUDED.rate
 `
 
 type SaveCurrencyRateParams struct {
-	CurrencyCode *string
+	CurrencyCode string
 	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
+	RateDate     time.Time
 }
 
 func (q *Queries) SaveCurrencyRate(ctx context.Context, arg SaveCurrencyRateParams) error {

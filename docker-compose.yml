@@ -1,18 +1,40 @@
 version: '3.8'
 
 services:
-  rates_postgres:
-    image: mirror.gcr.io/postgres:16-alpine
-    container_name: rates_backend_db
+  app:
+    build: .
+    container_name: stock-exchange-app
+    ports:
+      - "8080:8080"
     environment:
+      - DATABASE_URL=postgres://rates_admin:rates_secure_pass@db:5432/rates_db?sslmode=disable
+      - PORT=8080
+      - GIN_MODE=release
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: stock-exchange-db
+    environment:
+      POSTGRES_DB: rates_db
       POSTGRES_USER: rates_admin
       POSTGRES_PASSWORD: rates_secure_pass
-      POSTGRES_DB: rates_db 
     ports:
       - "5432:5432"
     volumes:
-      - rates_pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
-  rates_pgdata:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

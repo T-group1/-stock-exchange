@@ -5,26 +5,49 @@
 package db
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AlertRule struct {
 	ID            int64
 	UserID        int64
-	CurrencyCode  *string
+	CurrencyCode  string
 	TargetRate    pgtype.Numeric
 	ConditionType string
-	IsActive      *bool
+	IsActive      pgtype.Bool
+	CreatedAt     pgtype.Timestamp
 }
 
 type Currency struct {
-	Code string
-	Name string
+	Code      string
+	Name      string
+	Symbol    pgtype.Text
+	CreatedAt pgtype.Timestamp
 }
 
 type CurrencyRate struct {
 	ID           int64
-	CurrencyCode *string
+	CurrencyCode string
 	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
+	RateDate     time.Time
+	CreatedAt    pgtype.Timestamp
+}
+
+type Notification struct {
+	ID          int64
+	UserID      int64
+	AlertRuleID pgtype.Int8
+	Message     string
+	IsRead      pgtype.Bool
+	CreatedAt   pgtype.Timestamp
+}
+
+type User struct {
+	ID           int64
+	Email        string
+	PasswordHash string
+	CreatedAt    pgtype.Timestamp
+	UpdatedAt    pgtype.Timestamp
 }
