@@ -1,8 +1,23 @@
-include .make/openapi.mk
-include .make/codegen.mk
-include .make/lint.mk
+.PHONY: fmt build test run lint clean generate
 
-.PHONY: fmt
+# Сборка Go-приложения
+build:
+	go build -o bin/server ./cmd/server
 
-# Главная команда для глобального форматирования всего проекта
-fmt: openapi-format yaml-format
+# Запуск сервера
+run: build
+	./bin/server
+
+# Тесты
+test:
+	go test -v -race -coverprofile=coverage.out ./...
+
+# Генерация кода
+generate: generate-api generate-db
+
+# Полная проверка
+check: yaml-lint test
+
+# Очистка
+clean:
+	rm -rf bin/ coverage.out

@@ -1,8 +1,10 @@
 type: object
 properties:
   currency_pair:
-    type: string
-    example: USD/RUB
+  type: string
+  example: USD_RUB
+  description: Валютная пара в формате CODE_CODE (например, USD_RUB)
+  pattern: '^[A-Z]{3}_[A-Z]{3}$'
   rate_value:
     type: number
     format: double

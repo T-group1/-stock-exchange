@@ -9,12 +9,24 @@ import (
 )
 
 type Querier interface {
+	CountUnreadNotifications(ctx context.Context, userID int64) (int64, error)
 	CreateAlertRule(ctx context.Context, arg CreateAlertRuleParams) error
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteNotification(ctx context.Context, arg DeleteNotificationParams) error
+	DeleteUser(ctx context.Context, id int64) error
 	GetActiveAlertRules(ctx context.Context) ([]GetActiveAlertRulesRow, error)
 	GetLatestRates(ctx context.Context) ([]GetLatestRatesRow, error)
-	GetRatesHistory(ctx context.Context, currencyCode *string) ([]GetRatesHistoryRow, error)
+	GetRatesHistory(ctx context.Context, currencyCode string) ([]GetRatesHistoryRow, error)
+	GetUnreadNotifications(ctx context.Context, userID int64) ([]Notification, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByID(ctx context.Context, id int64) (User, error)
+	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	InsertCurrency(ctx context.Context, arg InsertCurrencyParams) error
+	MarkAllNotificationsAsRead(ctx context.Context, userID int64) error
+	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
 	SaveCurrencyRate(ctx context.Context, arg SaveCurrencyRateParams) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 }
 
 var _ Querier = (*Queries)(nil)

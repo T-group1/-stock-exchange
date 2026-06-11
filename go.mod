@@ -1,6 +1,6 @@
-module T_Project
+module github.com/T-group1/stock-exchange
 
-go 1.25.0
+go 1.22.3
 
 require github.com/jackc/pgx/v5 v5.10.0
 
