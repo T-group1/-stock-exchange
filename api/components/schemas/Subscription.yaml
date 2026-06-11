@@ -3,23 +3,35 @@ properties:
   id:
     type: string
     format: uuid
-    readOnly: true
-  email:
+  user_id:
     type: string
-    format: email
+    format: uuid
   currency_pair:
     type: string
-    example: USD_RUB
-  threshold:
+    example: USD/RUB
+  rate_value:
     type: number
-    format: float
+    format: double
+  condition:
+    type: string
+    enum:
+      - above
+      - below
+  is_active:
+    type: boolean
+    default: true
   created_at:
     type: string
     format: date-time
-    readOnly: true
+  triggered_at:
+    description: Время срабатывания уведомления
+    type: string
+    format: date-time
+    nullable: true
 required:
   - id
-  - email
+  - user_id
   - currency_pair
-  - threshold
+  - rate_value
+  - condition
   - created_at

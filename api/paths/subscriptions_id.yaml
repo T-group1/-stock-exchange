@@ -1,6 +1,6 @@
 delete:
   operationId: deleteSubscription
-  summary: Удалить подписку (отписаться от уведомлений)
+  summary: Удалить подписку
   parameters:
     - name: id
       in: path
@@ -9,5 +9,11 @@ delete:
         type: string
         format: uuid
   responses:
-    "204":
-      description: Подписка успешно удалена
+    '204':
+      description: Подписка удалена
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+    '404':
+      description: Подписка не найдена
+  tags:
+    - subscriptions

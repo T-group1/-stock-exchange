@@ -1,0 +1,25 @@
+type: object
+properties:
+  from:
+    type: string
+  to:
+    type: string
+  amount:
+    type: number
+    format: double
+  result:
+    type: number
+    format: double
+  applied_rate:
+    description: Применённый курс
+    type: number
+    format: double
+  date:
+    type: string
+    format: date
+  calculation_method:
+    description: Метод расчёта (прямой курс или через RUB)
+    type: string
+    enum:
+      - direct
+      - via_rub

@@ -1,0 +1,36 @@
+get:
+  operationId: getNotificationSettings
+  summary: Получить настройки уведомлений
+  responses:
+    '200':
+      description: Настройки уведомлений
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationSettings.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - notifications
+put:
+  operationId: updateNotificationSettings
+  summary: Обновить настройки уведомлений
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/NotificationSettingsUpdate.yaml
+  responses:
+    '200':
+      description: Настройки обновлены
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationSettings.yaml
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - notifications

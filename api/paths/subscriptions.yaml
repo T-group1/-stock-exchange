@@ -1,6 +1,7 @@
 get:
   operationId: listSubscriptions
-  summary: Получить список всех активных подписок на уведомления
+  summary: Список подписок
+  description: Возвращает все активные подписки текущего пользователя
   responses:
     '200':
       description: Список подписок
@@ -10,9 +11,14 @@ get:
             type: array
             items:
               $ref: ../components/schemas/Subscription.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - subscriptions
 post:
   operationId: createSubscription
-  summary: Создать подписку на уведомление о курсе
+  summary: Создать подписку
+  description: Создаёт новую подписку на уведомление о курсе
   requestBody:
     required: true
     content:
@@ -21,4 +27,14 @@ post:
           $ref: ../components/schemas/SubscriptionCreate.yaml
   responses:
     '201':
-      description: Подписка успешно создана
+      description: Подписка создана
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Subscription.yaml
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - subscriptions

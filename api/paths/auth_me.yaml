@@ -1,0 +1,15 @@
+get:
+  operationId: getCurrentUser
+  summary: Получить текущего пользователя
+  description: Возвращает информацию о текущем авторизованном пользователе
+  responses:
+    '200':
+      description: Информация о пользователе
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/User.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - auth

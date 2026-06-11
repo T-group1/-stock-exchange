@@ -1,0 +1,19 @@
+put:
+  operationId: updateUserPairsOrder
+  summary: Обновить порядок избранных валютных пар пользователя
+  description: Позволяет пользователю менять порядок отображения избранных валют (Drag-and-Drop)
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UserPairsUpdate.yaml
+  responses:
+    '200':
+      description: Порядок успешно сохранен
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  tags:
+    - user
