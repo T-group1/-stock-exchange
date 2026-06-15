@@ -1,15 +1,8 @@
 type: object
 properties:
   date:
-<<<<<<< HEAD
     type: string
     format: date
-=======
-    description: Текущая дата актуальности курсов (Unix timestamp в секундах)
-    type: integer
-    format: int64
-    example: 1718100000
->>>>>>> origin/main
   rates:
     type: array
     items:
