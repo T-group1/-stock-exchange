@@ -1,0 +1,50 @@
+get:
+  operationId: getFavorites
+  summary: Получить избранные валютные пары пользователя
+  responses:
+    '200':
+      description: Список избранных пар пользователя
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              favorite_pairs:
+                type: array
+                items:
+                  type: string
+                example:
+                  - USD_RUB
+                  - CAD_JPY
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  security:
+    - CookieAuth: []
+  tags:
+    - user
+post:
+  operationId: addFavorite
+  summary: Добавить валютную пару в избранное
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            currency_pair:
+              type: string
+              example: USD_RUB
+          required:
+            - currency_pair
+  responses:
+    '201':
+      description: Пара успешно добавлена в избранное
+    '400':
+      $ref: ../components/responses/ValidationError.yaml
+    '401':
+      $ref: ../components/responses/UnauthorizedError.yaml
+  security:
+    - CookieAuth: []
+  tags:
+    - user

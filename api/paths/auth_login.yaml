@@ -1,7 +1,11 @@
 post:
   operationId: loginUser
   summary: Вход в систему
+<<<<<<< HEAD
   description: Аутентификация по email и паролю, возвращает JWT токен
+=======
+  description: Аутентификация по email и паролю. При успешном входе JWT токен автоматически устанавливается в защищенные HttpOnly куки.
+>>>>>>> origin/main
   requestBody:
     required: true
     content:
@@ -10,7 +14,17 @@ post:
           $ref: ../components/schemas/LoginRequest.yaml
   responses:
     '200':
+<<<<<<< HEAD
       description: Успешный вход
+=======
+      description: Успешный вход. Токен успешно сохранен в куках браузера.
+      headers:
+        Set-Cookie:
+          description: Устанавливает безопасную HttpOnly куку с access_token
+          schema:
+            type: string
+            example: access_token=eyJhbGciOiJIUzI1Ni...; Path=/; HttpOnly; Secure; SameSite=Strict
+>>>>>>> origin/main
       content:
         application/json:
           schema:
