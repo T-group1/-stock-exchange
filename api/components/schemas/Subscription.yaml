@@ -13,6 +13,22 @@ properties:
     type: number
     format: double
   condition:
+<<<<<<< HEAD
+    type: string
+    enum:
+      - above
+      - below
+  is_active:
+    type: boolean
+    default: true
+  created_at:
+    type: string
+    format: date-time
+  triggered_at:
+    description: Время срабатывания уведомления
+    type: string
+    format: date-time
+=======
     type: string
     enum:
       - above
@@ -30,6 +46,7 @@ properties:
     type: integer
     format: int64
     example: 1718150000
+>>>>>>> origin/main
     nullable: true
 required:
   - id

@@ -12,10 +12,16 @@ properties:
     example: 100
     minimum: 0.01
   date:
+<<<<<<< HEAD
+    description: Дата для исторической конвертации (null = текущий курс)
+    type: string
+    format: date
+=======
     description: Дата для исторической конвертации (Unix timestamp в секундах, null = текущий курс)
     type: integer
     format: int64
     example: 1718100000
+>>>>>>> origin/main
     nullable: true
 required:
   - from

@@ -8,6 +8,14 @@ properties:
     format: double
     example: 92.45
   date:
+<<<<<<< HEAD
+    type: string
+    format: date
+    example: 2024-01-15
+  source:
+    description: Источник данных (cb_rf - ЦБ РФ, calculated - расчёт через RUB)
+    type: string
+=======
     description: Unix timestamp в секундах
     type: integer
     format: int64
@@ -15,6 +23,7 @@ properties:
   source:
     description: Источник данных (cb_rf - ЦБ РФ, calculated - расчёт через RUB)
     type: string
+>>>>>>> origin/main
     enum:
       - cb_rf
       - calculated

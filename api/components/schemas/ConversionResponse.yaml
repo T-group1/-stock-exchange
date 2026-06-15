@@ -15,10 +15,15 @@ properties:
     type: number
     format: double
   date:
+<<<<<<< HEAD
+    type: string
+    format: date
+=======
     description: Дата, на которую был рассчитан курс (Unix timestamp в секундах)
     type: integer
     format: int64
     example: 1718100000
+>>>>>>> origin/main
   calculation_method:
     description: Метод расчёта (прямой курс или через RUB)
     type: string
