@@ -11,67 +11,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createRate = `-- name: CreateRate :one
-INSERT INTO currency_rates (currency_code, rate, rate_date, source, change_percentage)
-VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (currency_code, rate_date) DO UPDATE SET
-  rate = EXCLUDED.rate,
-  source = EXCLUDED.source,
-  change_percentage = EXCLUDED.change_percentage
-RETURNING id, currency_code, rate, rate_date, source, change_percentage
+const getCrossRateHistory = `-- name: GetCrossRateHistory :many
+SELECT 
+    r_base.rate_date,
+    (r_base.rate / r_quote.rate) AS cross_rate
+FROM currency_rates r_base
+JOIN currency_rates r_quote 
+    ON r_base.rate_date = r_quote.rate_date 
+    AND r_quote.currency_code = $1
+WHERE r_base.currency_code = $2
+  AND r_base.rate_date >= $3
+  AND r_base.rate_date <= $4
+ORDER BY r_base.rate_date ASC
 `
 
-type CreateRateParams struct {
-	CurrencyCode     string         `json:"currency_code"`
-	Rate             pgtype.Numeric `json:"rate"`
-	RateDate         pgtype.Date    `json:"rate_date"`
-	Source           string         `json:"source"`
-	ChangePercentage pgtype.Numeric `json:"change_percentage"`
+type GetCrossRateHistoryParams struct {
+	QuoteCurrency string      `json:"quote_currency"`
+	BaseCurrency  string      `json:"base_currency"`
+	StartDate     pgtype.Date `json:"start_date"`
+	EndDate       pgtype.Date `json:"end_date"`
 }
 
-func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (CurrencyRate, error) {
-	row := q.db.QueryRow(ctx, createRate,
-		arg.CurrencyCode,
-		arg.Rate,
-		arg.RateDate,
-		arg.Source,
-		arg.ChangePercentage,
-	)
-	var i CurrencyRate
-	err := row.Scan(
-		&i.ID,
-		&i.CurrencyCode,
-		&i.Rate,
-		&i.RateDate,
-		&i.Source,
-		&i.ChangePercentage,
-	)
-	return i, err
+type GetCrossRateHistoryRow struct {
+	RateDate  pgtype.Date `json:"rate_date"`
+	CrossRate int32       `json:"cross_rate"`
 }
 
-const getLatestRates = `-- name: GetLatestRates :many
-SELECT DISTINCT ON (currency_code) id, currency_code, rate, rate_date, source, change_percentage
-FROM currency_rates
-ORDER BY currency_code, rate_date DESC
-`
-
-func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
-	rows, err := q.db.Query(ctx, getLatestRates)
+// Отдает готовую историю кросс-курса по дням. Бэкендер просто строит по этому график.
+func (q *Queries) GetCrossRateHistory(ctx context.Context, arg GetCrossRateHistoryParams) ([]GetCrossRateHistoryRow, error) {
+	rows, err := q.db.Query(ctx, getCrossRateHistory,
+		arg.QuoteCurrency,
+		arg.BaseCurrency,
+		arg.StartDate,
+		arg.EndDate,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CurrencyRate{}
+	items := []GetCrossRateHistoryRow{}
 	for rows.Next() {
-		var i CurrencyRate
-		if err := rows.Scan(
-			&i.ID,
-			&i.CurrencyCode,
-			&i.Rate,
-			&i.RateDate,
-			&i.Source,
-			&i.ChangePercentage,
-		); err != nil {
+		var i GetCrossRateHistoryRow
+		if err := rows.Scan(&i.RateDate, &i.CrossRate); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -82,25 +63,81 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 	return items, nil
 }
 
-const getRateHistory = `-- name: GetRateHistory :many
-SELECT rate, rate_date
+const getLatestCrossRate = `-- name: GetLatestCrossRate :one
+SELECT 
+    (r_base.rate / r_quote.rate) AS cross_rate,
+    r_base.rate_date
+FROM currency_rates r_base
+JOIN currency_rates r_quote 
+    ON r_base.rate_date = r_quote.rate_date 
+    AND r_quote.currency_code = $1
+WHERE r_base.currency_code = $2
+ORDER BY r_base.rate_date DESC
+LIMIT 1
+`
+
+type GetLatestCrossRateParams struct {
+	QuoteCurrency string `json:"quote_currency"`
+	BaseCurrency  string `json:"base_currency"`
+}
+
+type GetLatestCrossRateRow struct {
+	CrossRate int32       `json:"cross_rate"`
+	RateDate  pgtype.Date `json:"rate_date"`
+}
+
+// Магия: база сама делит курс базовой валюты на курс целевой за последнюю доступную дату
+func (q *Queries) GetLatestCrossRate(ctx context.Context, arg GetLatestCrossRateParams) (GetLatestCrossRateRow, error) {
+	row := q.db.QueryRow(ctx, getLatestCrossRate, arg.QuoteCurrency, arg.BaseCurrency)
+	var i GetLatestCrossRateRow
+	err := row.Scan(&i.CrossRate, &i.RateDate)
+	return i, err
+}
+
+const getLatestRate = `-- name: GetLatestRate :one
+SELECT currency_code, rate, rate_date
 FROM currency_rates
-WHERE currency_code = $1 AND rate_date >= $2
+WHERE currency_code = $1
+ORDER BY rate_date DESC
+LIMIT 1
+`
+
+type GetLatestRateRow struct {
+	CurrencyCode string         `json:"currency_code"`
+	Rate         pgtype.Numeric `json:"rate"`
+	RateDate     pgtype.Date    `json:"rate_date"`
+}
+
+func (q *Queries) GetLatestRate(ctx context.Context, currencyCode string) (GetLatestRateRow, error) {
+	row := q.db.QueryRow(ctx, getLatestRate, currencyCode)
+	var i GetLatestRateRow
+	err := row.Scan(&i.CurrencyCode, &i.Rate, &i.RateDate)
+	return i, err
+}
+
+const getRateHistory = `-- name: GetRateHistory :many
+SELECT currency_code, rate, rate_date
+FROM currency_rates
+WHERE currency_code = $1
+  AND rate_date >= $2
+  AND rate_date <= $3
 ORDER BY rate_date ASC
 `
 
 type GetRateHistoryParams struct {
 	CurrencyCode string      `json:"currency_code"`
-	RateDate     pgtype.Date `json:"rate_date"`
+	StartDate    pgtype.Date `json:"start_date"`
+	EndDate      pgtype.Date `json:"end_date"`
 }
 
 type GetRateHistoryRow struct {
-	Rate     pgtype.Numeric `json:"rate"`
-	RateDate pgtype.Date    `json:"rate_date"`
+	CurrencyCode string         `json:"currency_code"`
+	Rate         pgtype.Numeric `json:"rate"`
+	RateDate     pgtype.Date    `json:"rate_date"`
 }
 
 func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error) {
-	rows, err := q.db.Query(ctx, getRateHistory, arg.CurrencyCode, arg.RateDate)
+	rows, err := q.db.Query(ctx, getRateHistory, arg.CurrencyCode, arg.StartDate, arg.EndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +145,7 @@ func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) 
 	items := []GetRateHistoryRow{}
 	for rows.Next() {
 		var i GetRateHistoryRow
-		if err := rows.Scan(&i.Rate, &i.RateDate); err != nil {
+		if err := rows.Scan(&i.CurrencyCode, &i.Rate, &i.RateDate); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

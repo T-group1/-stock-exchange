@@ -11,25 +11,32 @@ import (
 )
 
 type Querier interface {
+	AddFavorite(ctx context.Context, arg AddFavoriteParams) error
 	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (Currency, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
-	CreateRate(ctx context.Context, arg CreateRateParams) (CurrencyRate, error)
 	CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateSubscription(ctx context.Context, arg DeactivateSubscriptionParams) error
 	GetActiveSubscriptionsForCurrency(ctx context.Context, currencyCode string) ([]Subscription, error)
+	// Отдает готовую историю кросс-курса по дням. Бэкендер просто строит по этому график.
+	GetCrossRateHistory(ctx context.Context, arg GetCrossRateHistoryParams) ([]GetCrossRateHistoryRow, error)
 	GetCurrencies(ctx context.Context) ([]Currency, error)
 	GetCurrencyByCode(ctx context.Context, code string) (Currency, error)
-	GetLatestRates(ctx context.Context) ([]CurrencyRate, error)
+	// Магия: база сама делит курс базовой валюты на курс целевой за последнюю доступную дату
+	GetLatestCrossRate(ctx context.Context, arg GetLatestCrossRateParams) (GetLatestCrossRateRow, error)
+	GetLatestRate(ctx context.Context, currencyCode string) (GetLatestRateRow, error)
 	GetNotificationSettings(ctx context.Context, userID pgtype.UUID) (NotificationSetting, error)
 	GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error)
 	GetSubscriptionByID(ctx context.Context, id pgtype.UUID) (Subscription, error)
 	GetUnreadCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]GetUserFavoritesRow, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
+	IsFavorite(ctx context.Context, arg IsFavoriteParams) (bool, error)
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
+	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
 }
 

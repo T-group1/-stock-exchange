@@ -23,6 +23,14 @@ type CurrencyRate struct {
 	ChangePercentage pgtype.Numeric `json:"change_percentage"`
 }
 
+type Favorite struct {
+	ID            pgtype.UUID `json:"id"`
+	UserID        pgtype.UUID `json:"user_id"`
+	BaseCurrency  string      `json:"base_currency"`
+	QuoteCurrency string      `json:"quote_currency"`
+	CreatedAt     int64       `json:"created_at"`
+}
+
 type Notification struct {
 	ID             pgtype.UUID `json:"id"`
 	UserID         pgtype.UUID `json:"user_id"`

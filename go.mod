@@ -1,4 +1,4 @@
-module T_Project
+module github.com/T-group1/stock-exchange
 
 go 1.25.0
 
