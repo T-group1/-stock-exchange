@@ -1,22 +1,16 @@
 type: object
 properties:
-<<<<<<< HEAD
   access_token:
     description: JWT токен для доступа к API
     type: string
     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-=======
->>>>>>> origin/main
   refresh_token:
     description: Токен для обновления access_token
     type: string
     example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-<<<<<<< HEAD
   token_type:
     type: string
     example: Bearer
-=======
->>>>>>> origin/main
   expires_in:
     description: Время жизни токена в секундах
     type: integer
@@ -24,12 +18,8 @@ properties:
   user:
     $ref: User.yaml
 required:
-<<<<<<< HEAD
   - access_token
   - refresh_token
   - token_type
-=======
-  - refresh_token
->>>>>>> origin/main
   - expires_in
   - user

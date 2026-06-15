@@ -11,15 +11,8 @@ properties:
       type: object
       properties:
         date:
-<<<<<<< HEAD
           type: string
           format: date
-=======
-          description: Дата исторического курса для точки на графике (Unix timestamp в секундах)
-          type: integer
-          format: int64
-          example: 1718100000
->>>>>>> origin/main
         rate:
           type: number
           format: double
