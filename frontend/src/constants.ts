@@ -1,0 +1,1 @@
+export const CURRENCIES = ["USD", "RUB", "EUR", "CNY", "GBP", "JPY"];
