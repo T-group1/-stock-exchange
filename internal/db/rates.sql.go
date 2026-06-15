@@ -11,57 +11,66 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createAlertRule = `-- name: CreateAlertRule :exec
-INSERT INTO alert_rules (user_id, currency_code, target_rate, condition_type)
-VALUES ($1, $2, $3, $4)
+const createRate = `-- name: CreateRate :one
+INSERT INTO currency_rates (pair, rate, rate_date, source, change_percentage)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (pair, rate_date) DO UPDATE SET
+  rate = EXCLUDED.rate,
+  source = EXCLUDED.source,
+  change_percentage = EXCLUDED.change_percentage
+RETURNING id, pair, rate, rate_date, source, change_percentage
 `
 
-type CreateAlertRuleParams struct {
-	UserID        int64
-	CurrencyCode  *string
-	TargetRate    pgtype.Numeric
-	ConditionType string
+type CreateRateParams struct {
+	Pair             string         `json:"pair"`
+	Rate             pgtype.Numeric `json:"rate"`
+	RateDate         int64          `json:"rate_date"`
+	Source           string         `json:"source"`
+	ChangePercentage pgtype.Numeric `json:"change_percentage"`
 }
 
-func (q *Queries) CreateAlertRule(ctx context.Context, arg CreateAlertRuleParams) error {
-	_, err := q.db.Exec(ctx, createAlertRule,
-		arg.UserID,
-		arg.CurrencyCode,
-		arg.TargetRate,
-		arg.ConditionType,
+func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (CurrencyRate, error) {
+	row := q.db.QueryRow(ctx, createRate,
+		arg.Pair,
+		arg.Rate,
+		arg.RateDate,
+		arg.Source,
+		arg.ChangePercentage,
 	)
-	return err
+	var i CurrencyRate
+	err := row.Scan(
+		&i.ID,
+		&i.Pair,
+		&i.Rate,
+		&i.RateDate,
+		&i.Source,
+		&i.ChangePercentage,
+	)
+	return i, err
 }
 
-const getActiveAlertRules = `-- name: GetActiveAlertRules :many
-SELECT id, user_id, currency_code, target_rate, condition_type 
-FROM alert_rules 
-WHERE is_active = true
+const getLatestRates = `-- name: GetLatestRates :many
+SELECT DISTINCT ON (pair) id, pair, rate, rate_date, source, change_percentage
+FROM currency_rates
+ORDER BY pair, rate_date DESC
 `
 
-type GetActiveAlertRulesRow struct {
-	ID            int64
-	UserID        int64
-	CurrencyCode  *string
-	TargetRate    pgtype.Numeric
-	ConditionType string
-}
-
-func (q *Queries) GetActiveAlertRules(ctx context.Context) ([]GetActiveAlertRulesRow, error) {
-	rows, err := q.db.Query(ctx, getActiveAlertRules)
+func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
+	rows, err := q.db.Query(ctx, getLatestRates)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetActiveAlertRulesRow
+	items := []CurrencyRate{}
 	for rows.Next() {
-		var i GetActiveAlertRulesRow
+		var i CurrencyRate
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
-			&i.CurrencyCode,
-			&i.TargetRate,
-			&i.ConditionType,
+			&i.Pair,
+			&i.Rate,
+			&i.RateDate,
+			&i.Source,
+			&i.ChangePercentage,
 		); err != nil {
 			return nil, err
 		}
@@ -73,59 +82,32 @@ func (q *Queries) GetActiveAlertRules(ctx context.Context) ([]GetActiveAlertRule
 	return items, nil
 }
 
-const getLatestRates = `-- name: GetLatestRates :many
-SELECT DISTINCT ON (currency_code) currency_code, rate, rate_date
+const getRateHistory = `-- name: GetRateHistory :many
+SELECT rate, rate_date
 FROM currency_rates
-ORDER BY currency_code, rate_date DESC
-`
-
-type GetLatestRatesRow struct {
-	CurrencyCode *string
-	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
-}
-
-func (q *Queries) GetLatestRates(ctx context.Context) ([]GetLatestRatesRow, error) {
-	rows, err := q.db.Query(ctx, getLatestRates)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetLatestRatesRow
-	for rows.Next() {
-		var i GetLatestRatesRow
-		if err := rows.Scan(&i.CurrencyCode, &i.Rate, &i.RateDate); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRatesHistory = `-- name: GetRatesHistory :many
-SELECT rate, rate_date 
-FROM currency_rates
-WHERE currency_code = $1
+WHERE pair = $1 AND rate_date >= $2
 ORDER BY rate_date ASC
 `
 
-type GetRatesHistoryRow struct {
-	Rate     pgtype.Numeric
-	RateDate pgtype.Date
+type GetRateHistoryParams struct {
+	Pair     string `json:"pair"`
+	RateDate int64  `json:"rate_date"`
 }
 
-func (q *Queries) GetRatesHistory(ctx context.Context, currencyCode *string) ([]GetRatesHistoryRow, error) {
-	rows, err := q.db.Query(ctx, getRatesHistory, currencyCode)
+type GetRateHistoryRow struct {
+	Rate     pgtype.Numeric `json:"rate"`
+	RateDate int64          `json:"rate_date"`
+}
+
+func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error) {
+	rows, err := q.db.Query(ctx, getRateHistory, arg.Pair, arg.RateDate)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRatesHistoryRow
+	items := []GetRateHistoryRow{}
 	for rows.Next() {
-		var i GetRatesHistoryRow
+		var i GetRateHistoryRow
 		if err := rows.Scan(&i.Rate, &i.RateDate); err != nil {
 			return nil, err
 		}
@@ -135,38 +117,4 @@ func (q *Queries) GetRatesHistory(ctx context.Context, currencyCode *string) ([]
 		return nil, err
 	}
 	return items, nil
-}
-
-const insertCurrency = `-- name: InsertCurrency :exec
-INSERT INTO currencies (code, name)
-VALUES ($1, $2)
-ON CONFLICT (code) DO NOTHING
-`
-
-type InsertCurrencyParams struct {
-	Code string
-	Name string
-}
-
-func (q *Queries) InsertCurrency(ctx context.Context, arg InsertCurrencyParams) error {
-	_, err := q.db.Exec(ctx, insertCurrency, arg.Code, arg.Name)
-	return err
-}
-
-const saveCurrencyRate = `-- name: SaveCurrencyRate :exec
-INSERT INTO currency_rates (currency_code, rate, rate_date)
-VALUES ($1, $2, $3)
-ON CONFLICT (currency_code, rate_date) 
-DO UPDATE SET rate = EXCLUDED.rate
-`
-
-type SaveCurrencyRateParams struct {
-	CurrencyCode *string
-	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
-}
-
-func (q *Queries) SaveCurrencyRate(ctx context.Context, arg SaveCurrencyRateParams) error {
-	_, err := q.db.Exec(ctx, saveCurrencyRate, arg.CurrencyCode, arg.Rate, arg.RateDate)
-	return err
 }

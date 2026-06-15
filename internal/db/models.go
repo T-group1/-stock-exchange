@@ -8,23 +8,55 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type AlertRule struct {
-	ID            int64
-	UserID        int64
-	CurrencyCode  *string
-	TargetRate    pgtype.Numeric
-	ConditionType string
-	IsActive      *bool
-}
-
 type Currency struct {
-	Code string
-	Name string
+	Code    string `json:"code"`
+	Name    string `json:"name"`
+	Nominal int32  `json:"nominal"`
 }
 
 type CurrencyRate struct {
-	ID           int64
-	CurrencyCode *string
-	Rate         pgtype.Numeric
-	RateDate     pgtype.Date
+	ID               int64          `json:"id"`
+	Pair             string         `json:"pair"`
+	Rate             pgtype.Numeric `json:"rate"`
+	RateDate         int64          `json:"rate_date"`
+	Source           string         `json:"source"`
+	ChangePercentage pgtype.Numeric `json:"change_percentage"`
+}
+
+type Notification struct {
+	ID             pgtype.UUID `json:"id"`
+	UserID         pgtype.UUID `json:"user_id"`
+	SubscriptionID pgtype.UUID `json:"subscription_id"`
+	Type           string      `json:"type"`
+	Title          string      `json:"title"`
+	Message        string      `json:"message"`
+	IsRead         pgtype.Bool `json:"is_read"`
+	CreatedAt      int64       `json:"created_at"`
+}
+
+type NotificationSetting struct {
+	UserID          pgtype.UUID `json:"user_id"`
+	EmailEnabled    pgtype.Bool `json:"email_enabled"`
+	BrowserEnabled  pgtype.Bool `json:"browser_enabled"`
+	QuietHoursStart pgtype.Text `json:"quiet_hours_start"`
+	QuietHoursEnd   pgtype.Text `json:"quiet_hours_end"`
+}
+
+type Subscription struct {
+	ID           pgtype.UUID    `json:"id"`
+	UserID       pgtype.UUID    `json:"user_id"`
+	CurrencyPair string         `json:"currency_pair"`
+	RateValue    pgtype.Numeric `json:"rate_value"`
+	Condition    string         `json:"condition"`
+	IsActive     pgtype.Bool    `json:"is_active"`
+	CreatedAt    int64          `json:"created_at"`
+	TriggeredAt  pgtype.Int8    `json:"triggered_at"`
+}
+
+type User struct {
+	ID           pgtype.UUID `json:"id"`
+	Email        string      `json:"email"`
+	Name         string      `json:"name"`
+	PasswordHash string      `json:"password_hash"`
+	CreatedAt    int64       `json:"created_at"`
 }

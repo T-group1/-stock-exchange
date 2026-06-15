@@ -6,26 +6,23 @@ import (
 	"log"
 	"time"
 
-	"T_Project/internal/db" // Путь к твоему сгенерированному пакету
+	"T_Project/internal/db"
 	
-	// Правильные импорты драйвера pgx v5
 	"github.com/jackc/pgx/v5"
 )
 
 func main() {
 	ctx := context.Background()
 
-	// 1. Строка подключения к твоей базе в Docker
+	// 1. Строка подключения базе в Docker
 	connStr := "postgres://rates_admin:rates_secure_pass@localhost:5432/rates_db?sslmode=disable"
 
-	// 2. Устанавливаем соединение с СУБД (одиночное подключение)
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 	}
 	defer conn.Close(ctx)
 
-	// 3. Инициализируем сгенерированный sqlc клиент
 	queries := db.New(conn)
 
 	// 4. ТЕСТ 1: Пробуем вставить новую валюту (например, Юань)
