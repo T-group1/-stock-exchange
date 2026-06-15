@@ -1,5 +1,5 @@
 -- name: CreateSubscription :one
-INSERT INTO subscriptions (user_id, currency_pair, rate_value, condition)
+INSERT INTO subscriptions (user_id, currency_code, rate_value, condition)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
@@ -7,9 +7,9 @@ RETURNING *;
 SELECT * FROM subscriptions
 WHERE user_id = $1;
 
--- name: GetActiveSubscriptionsForPair :many
+-- name: GetActiveSubscriptionsForCurrency :many
 SELECT * FROM subscriptions
-WHERE currency_pair = $1 AND is_active = true;
+WHERE currency_code = $1 AND is_active = true;
 
 -- name: DeactivateSubscription :exec
 UPDATE subscriptions

@@ -12,26 +12,26 @@ import (
 )
 
 const createRate = `-- name: CreateRate :one
-INSERT INTO currency_rates (pair, rate, rate_date, source, change_percentage)
+INSERT INTO currency_rates (currency_code, rate, rate_date, source, change_percentage)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (pair, rate_date) DO UPDATE SET
+ON CONFLICT (currency_code, rate_date) DO UPDATE SET
   rate = EXCLUDED.rate,
   source = EXCLUDED.source,
   change_percentage = EXCLUDED.change_percentage
-RETURNING id, pair, rate, rate_date, source, change_percentage
+RETURNING id, currency_code, rate, rate_date, source, change_percentage
 `
 
 type CreateRateParams struct {
-	Pair             string         `json:"pair"`
+	CurrencyCode     string         `json:"currency_code"`
 	Rate             pgtype.Numeric `json:"rate"`
-	RateDate         int64          `json:"rate_date"`
+	RateDate         pgtype.Date    `json:"rate_date"`
 	Source           string         `json:"source"`
 	ChangePercentage pgtype.Numeric `json:"change_percentage"`
 }
 
 func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (CurrencyRate, error) {
 	row := q.db.QueryRow(ctx, createRate,
-		arg.Pair,
+		arg.CurrencyCode,
 		arg.Rate,
 		arg.RateDate,
 		arg.Source,
@@ -40,7 +40,7 @@ func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (Currenc
 	var i CurrencyRate
 	err := row.Scan(
 		&i.ID,
-		&i.Pair,
+		&i.CurrencyCode,
 		&i.Rate,
 		&i.RateDate,
 		&i.Source,
@@ -50,9 +50,9 @@ func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (Currenc
 }
 
 const getLatestRates = `-- name: GetLatestRates :many
-SELECT DISTINCT ON (pair) id, pair, rate, rate_date, source, change_percentage
+SELECT DISTINCT ON (currency_code) id, currency_code, rate, rate_date, source, change_percentage
 FROM currency_rates
-ORDER BY pair, rate_date DESC
+ORDER BY currency_code, rate_date DESC
 `
 
 func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
@@ -66,7 +66,7 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 		var i CurrencyRate
 		if err := rows.Scan(
 			&i.ID,
-			&i.Pair,
+			&i.CurrencyCode,
 			&i.Rate,
 			&i.RateDate,
 			&i.Source,
@@ -85,22 +85,22 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 const getRateHistory = `-- name: GetRateHistory :many
 SELECT rate, rate_date
 FROM currency_rates
-WHERE pair = $1 AND rate_date >= $2
+WHERE currency_code = $1 AND rate_date >= $2
 ORDER BY rate_date ASC
 `
 
 type GetRateHistoryParams struct {
-	Pair     string `json:"pair"`
-	RateDate int64  `json:"rate_date"`
+	CurrencyCode string      `json:"currency_code"`
+	RateDate     pgtype.Date `json:"rate_date"`
 }
 
 type GetRateHistoryRow struct {
 	Rate     pgtype.Numeric `json:"rate"`
-	RateDate int64          `json:"rate_date"`
+	RateDate pgtype.Date    `json:"rate_date"`
 }
 
 func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error) {
-	rows, err := q.db.Query(ctx, getRateHistory, arg.Pair, arg.RateDate)
+	rows, err := q.db.Query(ctx, getRateHistory, arg.CurrencyCode, arg.RateDate)
 	if err != nil {
 		return nil, err
 	}

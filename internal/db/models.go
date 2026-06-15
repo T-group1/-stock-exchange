@@ -16,9 +16,9 @@ type Currency struct {
 
 type CurrencyRate struct {
 	ID               int64          `json:"id"`
-	Pair             string         `json:"pair"`
+	CurrencyCode     string         `json:"currency_code"`
 	Rate             pgtype.Numeric `json:"rate"`
-	RateDate         int64          `json:"rate_date"`
+	RateDate         pgtype.Date    `json:"rate_date"`
 	Source           string         `json:"source"`
 	ChangePercentage pgtype.Numeric `json:"change_percentage"`
 }
@@ -45,7 +45,7 @@ type NotificationSetting struct {
 type Subscription struct {
 	ID           pgtype.UUID    `json:"id"`
 	UserID       pgtype.UUID    `json:"user_id"`
-	CurrencyPair string         `json:"currency_pair"`
+	CurrencyCode string         `json:"currency_code"`
 	RateValue    pgtype.Numeric `json:"rate_value"`
 	Condition    string         `json:"condition"`
 	IsActive     pgtype.Bool    `json:"is_active"`

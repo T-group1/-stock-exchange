@@ -17,7 +17,7 @@ type Querier interface {
 	CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateSubscription(ctx context.Context, arg DeactivateSubscriptionParams) error
-	GetActiveSubscriptionsForPair(ctx context.Context, currencyPair string) ([]Subscription, error)
+	GetActiveSubscriptionsForCurrency(ctx context.Context, currencyCode string) ([]Subscription, error)
 	GetCurrencies(ctx context.Context) ([]Currency, error)
 	GetCurrencyByCode(ctx context.Context, code string) (Currency, error)
 	GetLatestRates(ctx context.Context) ([]CurrencyRate, error)

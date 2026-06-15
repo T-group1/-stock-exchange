@@ -12,14 +12,14 @@ import (
 )
 
 const createSubscription = `-- name: CreateSubscription :one
-INSERT INTO subscriptions (user_id, currency_pair, rate_value, condition)
+INSERT INTO subscriptions (user_id, currency_code, rate_value, condition)
 VALUES ($1, $2, $3, $4)
-RETURNING id, user_id, currency_pair, rate_value, condition, is_active, created_at, triggered_at
+RETURNING id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at
 `
 
 type CreateSubscriptionParams struct {
 	UserID       pgtype.UUID    `json:"user_id"`
-	CurrencyPair string         `json:"currency_pair"`
+	CurrencyCode string         `json:"currency_code"`
 	RateValue    pgtype.Numeric `json:"rate_value"`
 	Condition    string         `json:"condition"`
 }
@@ -27,7 +27,7 @@ type CreateSubscriptionParams struct {
 func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error) {
 	row := q.db.QueryRow(ctx, createSubscription,
 		arg.UserID,
-		arg.CurrencyPair,
+		arg.CurrencyCode,
 		arg.RateValue,
 		arg.Condition,
 	)
@@ -35,7 +35,7 @@ func (q *Queries) CreateSubscription(ctx context.Context, arg CreateSubscription
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CurrencyPair,
+		&i.CurrencyCode,
 		&i.RateValue,
 		&i.Condition,
 		&i.IsActive,
@@ -61,13 +61,13 @@ func (q *Queries) DeactivateSubscription(ctx context.Context, arg DeactivateSubs
 	return err
 }
 
-const getActiveSubscriptionsForPair = `-- name: GetActiveSubscriptionsForPair :many
-SELECT id, user_id, currency_pair, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
-WHERE currency_pair = $1 AND is_active = true
+const getActiveSubscriptionsForCurrency = `-- name: GetActiveSubscriptionsForCurrency :many
+SELECT id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
+WHERE currency_code = $1 AND is_active = true
 `
 
-func (q *Queries) GetActiveSubscriptionsForPair(ctx context.Context, currencyPair string) ([]Subscription, error) {
-	rows, err := q.db.Query(ctx, getActiveSubscriptionsForPair, currencyPair)
+func (q *Queries) GetActiveSubscriptionsForCurrency(ctx context.Context, currencyCode string) ([]Subscription, error) {
+	rows, err := q.db.Query(ctx, getActiveSubscriptionsForCurrency, currencyCode)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (q *Queries) GetActiveSubscriptionsForPair(ctx context.Context, currencyPai
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.CurrencyPair,
+			&i.CurrencyCode,
 			&i.RateValue,
 			&i.Condition,
 			&i.IsActive,
@@ -96,7 +96,7 @@ func (q *Queries) GetActiveSubscriptionsForPair(ctx context.Context, currencyPai
 }
 
 const getSubscriptionByID = `-- name: GetSubscriptionByID :one
-SELECT id, user_id, currency_pair, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
+SELECT id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
 WHERE id = $1
 `
 
@@ -106,7 +106,7 @@ func (q *Queries) GetSubscriptionByID(ctx context.Context, id pgtype.UUID) (Subs
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CurrencyPair,
+		&i.CurrencyCode,
 		&i.RateValue,
 		&i.Condition,
 		&i.IsActive,
@@ -117,7 +117,7 @@ func (q *Queries) GetSubscriptionByID(ctx context.Context, id pgtype.UUID) (Subs
 }
 
 const getUserSubscriptions = `-- name: GetUserSubscriptions :many
-SELECT id, user_id, currency_pair, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
+SELECT id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
 WHERE user_id = $1
 `
 
@@ -133,7 +133,7 @@ func (q *Queries) GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) 
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.CurrencyPair,
+			&i.CurrencyCode,
 			&i.RateValue,
 			&i.Condition,
 			&i.IsActive,
