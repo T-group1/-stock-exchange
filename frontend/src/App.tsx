@@ -1,0 +1,75 @@
+import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import { fetchRates } from "./Api/currencyApi";
+
+import Header from "./components/Header";
+import AuthPage from "./pages/AuthPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
+import NotificationManagerPage from "./pages/NotificationManagerPage";
+import CreateNotificationPage from "./pages/CreateNotificationPage";
+import CurrencyConverter from "./components/CurrencyConverter";
+import FavoritesList from "./components/FavoritesList";
+
+export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [rates, setRates] = useState<Record<string, number>>({}); 
+
+  useEffect(() => {
+    fetchRates()
+      .then((data: Record<string, number>) => {
+        setRates(data);
+        console.log("Курсы валют успешно загружены:", data);
+      })
+      .catch((err: any) => {
+        console.error("Ошибка при получении курсов:", err);
+      });
+  }, []);
+
+  return (
+    <Router>
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
+
+        <Header user={user} />
+
+        <Routes>
+          <Route path="/" element={
+            <div>
+      
+              <CurrencyConverter rates={rates} user={user} favorites={favorites} setFavorites={setFavorites} />
+
+              {user && (
+                <FavoritesList favorites={favorites} setFavorites={setFavorites} />
+              )}
+            </div>
+          } />
+
+          <Route path="/auth" element={<AuthPage setUser={setUser} />} />
+          
+          <Route path="/verify-email" element={<VerifyEmailPage setUser={setUser} />} />
+          
+          <Route path="/profile" element={
+            <NotificationManagerPage 
+              user={user} 
+              setUser={setUser} 
+              notifications={notifications} 
+              setNotifications={setNotifications} 
+              setFavorites={setFavorites}
+            />
+          } />
+
+          <Route path="/create-notification" element={
+            <CreateNotificationPage 
+              user={user} 
+              notifications={notifications} 
+              setNotifications={setNotifications} 
+              rates={rates} 
+            />
+          } />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
