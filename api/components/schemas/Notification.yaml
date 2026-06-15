@@ -27,15 +27,8 @@ properties:
     type: boolean
     default: false
   created_at:
-<<<<<<< HEAD
     type: string
     format: date-time
-=======
-    description: Unix timestamp в секундах
-    type: integer
-    format: int64
-    example: 1718100000
->>>>>>> origin/main
 required:
   - id
   - user_id
