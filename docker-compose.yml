@@ -22,7 +22,7 @@ services:
       - "./letsencrypt:/letsencrypt"
 
   frontend:
-    image: ghcr.io/t-group1/-stock-exchange/frontend:latest
+    image: ghcr.io/t-group1/stock-exchange/frontend:latest
     container_name: frontend
     restart: always
     labels:
@@ -32,7 +32,7 @@ services:
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
 
   backend:
-    image: ghcr.io/t-group1/-stock-exchange/backend:latest
+    image: ghcr.io/t-group1/stock-exchange/backend:latest
     container_name: backend
     restart: always
     # Базу данных мы тут не поднимаем, бэкенд будет подключаться к той, что дал препод (по IP)
