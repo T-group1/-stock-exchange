@@ -2,10 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CurrencyChart from "./CurrencyChart";
 
-export default function CurrencyConverter({ rates = {}, user, favorites, setFavorites }: any) {
+export default function CurrencyConverter({ 
+  rates = {}, 
+  user, 
+  favorites, 
+  setFavorites,
+  from,
+  setFrom,
+  to,
+  setTo 
+}: any) {
   const navigate = useNavigate();
-  const [from, setFrom] = useState("USD");
-  const [to, setTo] = useState("RUB");
+
   const [hoverFav, setHoverFav] = useState(false);
   const [amount, setAmount] = useState<number | "">(1); 
 
@@ -183,7 +191,6 @@ export default function CurrencyConverter({ rates = {}, user, favorites, setFavo
             {isFavorite ? "⭐ Пара добавлена в избранное" : "☆ Добавить эту пару в Избранное"}
           </button>
         ) : (
-
           <div style={{ 
             padding: "20px", 
             background: "#f5f3ff", 
@@ -219,6 +226,37 @@ export default function CurrencyConverter({ rates = {}, user, favorites, setFavo
 
       <div style={{ background: "#fff", padding: "20px 0 0 0", borderTop: "1px solid #f1f5f9" }}>
         <CurrencyChart baseCurrency={from} quoteCurrency={to} />  
+      </div>
+
+      <div style={{ marginTop: "15px" }}>
+        <button
+          disabled={!user} 
+          onClick={() => navigate("/create-notification", { state: { from, to, openNotificationModal: true } })}
+          style={{
+            width: "100%",
+            padding: "12px",
+            background: user ? "#7c3aed" : "#cbd5e1",
+            color: user ? "#fff" : "#94a3b8",
+            border: "none",
+            borderRadius: "12px",
+            cursor: user ? "pointer" : "not-allowed",
+            fontSize: "14px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            transition: "all 0.2s"
+          }}
+          onMouseEnter={(e) => {
+            if (user) e.currentTarget.style.background = "#5b21b6";
+          }}
+          onMouseLeave={(e) => {
+            if (user) e.currentTarget.style.background = "#7c3aed";
+          }}
+        >
+          {user ? "Создать уведомление об этой паре" : "Войдите, чтобы настроить уведомления"}
+        </button>
       </div>
 
     </div>

@@ -18,21 +18,66 @@ export const mockChanges: Record<string, number> = {
 };
 
 export async function fetchRates(): Promise<Record<string, number>> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockRates), 300);
-  });
+<<<<<<< feature/frontend-fix
+  try {
+    const response = await fetch('/api/rates');
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
+    
+    const responseData = await response.json();
+    
+    const ratesRecord: Record<string, number> = {};
+    
+    if (responseData.rates && Array.isArray(responseData.rates)) {
+      responseData.rates.forEach((item: any) => {
+
+        const code = item.currency || item.code || item.id;
+        const value = item.rate || item.value;
+        if (code && value) {
+          ratesRecord[code] = value;
+        }
+      });
+      return ratesRecord;
+    }
+    
+    return responseData;
+
+  } catch (error) {
+    console.error("Сервер недоступен, показываем моки:", error);
+    return mockRates;
+  }
 }
 
-// Graphycs generation (last 30d)
-export function fetchChartData(base: string, quote: string) {
-  const data = [];
-  const baseRate = mockRates[base] / (mockRates[quote] || 1);
-  
-  for (let i = 12; i <= 30; i += 2) {
-    data.push({ date: `${i} мая`, rate: +(baseRate * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4) });
+export async function fetchChartData(base: string, quote: string) {
+  try {
+    const pair = `${base}_${quote}`.toUpperCase(); 
+    
+    const response = await fetch(`/api/rates/${pair}`);
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
+    
+    const responseData = await response.json();
+
+    return responseData.data || responseData; 
+
+  } catch (error) {
+    console.error("Не удалось загрузить график, генерируем моки:", error);
+    
+    const baseRate = mockRates[base] / (mockRates[quote] || 1);
+    const mockData = [];
+    
+    for (let i = 12; i <= 30; i += 2) {
+      mockData.push({ date: `${i} мая`, rate: +(baseRate * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4) });
+    }
+    for (let i = 1; i <= 9; i += 2) {
+      mockData.push({ date: `${i} июня`, rate: +(baseRate * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4) });
+    }
+    
+    return mockData;
   }
-  for (let i = 1; i <= 9; i += 2) {
-    data.push({ date: `${i} июня`, rate: +(baseRate * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4) });
-  }
-  return data;
 }
+main
