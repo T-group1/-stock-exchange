@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      # ВПИШИ СЮДА СВОЮ ПОЧТУ (любую рабочую), чтобы получить SSL сертификат!
+      - "--certificatesresolvers.myresolver.acme.email=твоя_почта@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+
+  frontend:
+    image: ghcr.io/t-group1/-stock-exchange/frontend:latest
+    container_name: frontend
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`team1.verstack.ru`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+
+  backend:
+    image: ghcr.io/t-group1/-stock-exchange/backend:latest
+    container_name: backend
+    restart: always
+    # Базу данных мы тут не поднимаем, бэкенд будет подключаться к той, что дал препод (по IP)
+    labels:
+      - "traefik.enable=true"
+      # Все запросы, начинающиеся на /api, летят сюда
+      - "traefik.http.routers.backend.rule=Host(`team1.verstack.ru`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
