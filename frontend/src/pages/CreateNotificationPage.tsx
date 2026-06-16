@@ -19,7 +19,7 @@ export default function CreateNotificationPage({ user, notifications, setNotific
     return (
       <div style={{ padding: "30px 20px", display: "flex", justifyContent: "center" }}>
         <div style={{ maxWidth: "400px", width: "100%", background: "#f5f3ff", border: "1px solid #c084fc", borderRadius: "12px", padding: "25px", textAlign: "center" }}>
-          <h3 style={{ margin: "0 0 15px 0", color: "#4b5563", fontSize: "18px" }}>Вы не вошли в систему 🔒</h3>
+          <h3 style={{ margin: "0 0 15px 0", color: "#4b5563", fontSize: "18px" }}>Вы не вошли в систему </h3>
           <p style={{ color: "#6b7280", fontSize: "14px", margin: "0 0 20px 0" }}>Для создания уведомлений нужно авторизоваться.</p>
           <button onClick={() => navigate("/auth")} style={{ padding: "10px 24px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>Войти в аккаунт</button>
         </div>

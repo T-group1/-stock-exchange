@@ -27,19 +27,42 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const chartPoints = fetchChartData(baseCurrency, quoteCurrency);
-    if (days === 7) setData(chartPoints.slice(-4));
-    else if (days === 90) {
-      const extended = [...chartPoints, ...chartPoints, ...chartPoints].map((p, i) => ({
-        ...p,
-        date: `${i + 1} дней назад`
-      }));
-      setData(extended);
-    } else {
-      setData(chartPoints);
-    }
+useEffect(() => {
+    const loadData = async () => {
+      try {
+        const rawPoints = await fetchChartData(baseCurrency, quoteCurrency);
+        if (!Array.isArray(rawPoints)) return;
+
+        const getCalendarDate = (daysAgo: number) => {
+          const date = new Date();
+          date.setDate(date.getDate() - daysAgo);
+          return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+        };
+        let chartPoints = [...rawPoints];
+
+        if (days === 7) {
+          chartPoints = rawPoints.slice(0, 7);
+        } else if (days === 90) {
+          chartPoints = [...rawPoints, ...rawPoints, ...rawPoints].slice(0, 90);
+        } else {
+          chartPoints = rawPoints.slice(0, 30);
+        }
+
+        const formattedData = chartPoints.map((p, i) => ({
+          ...p,
+          date: getCalendarDate(i)
+        }));
+
+        setData(formattedData.reverse());
+        
+      } catch (err) {
+        console.error("Ошибка при обработке данных для графика:", err);
+      }
+    };
+    loadData();
+
   }, [baseCurrency, quoteCurrency, days]);
+
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };

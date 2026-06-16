@@ -12,6 +12,8 @@ import CurrencyConverter from "./components/CurrencyConverter";
 import FavoritesList from "./components/FavoritesList";
 
 export default function App() {
+  const [from, setFrom] = useState("USD");
+  const [to, setTo] = useState("RUB");
   const [user, setUser] = useState<any>(null);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -37,11 +39,24 @@ export default function App() {
         <Routes>
           <Route path="/" element={
             <div>
-      
-              <CurrencyConverter rates={rates} user={user} favorites={favorites} setFavorites={setFavorites} />
+              <CurrencyConverter 
+                rates={rates} 
+                user={user} 
+                favorites={favorites} 
+                setFavorites={setFavorites}
+                from={from}
+                setFrom={setFrom}
+                to={to}
+                setTo={setTo}
+              />
 
               {user && (
-                <FavoritesList favorites={favorites} setFavorites={setFavorites} />
+                <FavoritesList 
+                  favorites={favorites} 
+                  setFavorites={setFavorites} 
+                  setFrom={setFrom} 
+                  setTo={setTo} 
+                />
               )}
             </div>
           } />
