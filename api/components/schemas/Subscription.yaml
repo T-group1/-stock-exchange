@@ -13,7 +13,6 @@ properties:
     type: number
     format: double
   condition:
-<<<<<<< HEAD
     type: string
     enum:
       - above
@@ -28,25 +27,6 @@ properties:
     description: Время срабатывания уведомления
     type: string
     format: date-time
-=======
-    type: string
-    enum:
-      - above
-      - below
-  is_active:
-    type: boolean
-    default: true
-  created_at:
-    description: Unix timestamp в секундах
-    type: integer
-    format: int64
-    example: 1718100000
-  triggered_at:
-    description: Время срабатывания уведомления (Unix timestamp в секундах)
-    type: integer
-    format: int64
-    example: 1718150000
->>>>>>> origin/main
     nullable: true
 required:
   - id

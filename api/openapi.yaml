@@ -13,11 +13,6 @@ paths:
     $ref: paths/auth_register.yaml
   /auth/login:
     $ref: paths/auth_login.yaml
-<<<<<<< HEAD
-  /auth/logout:
-    $ref: paths/auth_logout.yaml
-=======
->>>>>>> origin/main
   /auth/refresh:
     $ref: paths/auth_refresh.yaml
   /auth/me:
@@ -27,64 +22,39 @@ paths:
   /rates:
     $ref: paths/rates.yaml
   /rates/{pair}:
-<<<<<<< HEAD
     $ref: paths/rates_pair.yaml
-=======
-    $ref: paths/rates_{pair}.yaml
->>>>>>> origin/main
   /convert:
     $ref: paths/convert.yaml
   /subscriptions:
     $ref: paths/subscriptions.yaml
   /subscriptions/{id}:
-<<<<<<< HEAD
     $ref: paths/subscriptions_id.yaml
   /notifications:
     $ref: paths/notifications.yaml
   /notifications/{id}/read:
     $ref: paths/notifications_id_read.yaml
-=======
-    $ref: paths/subscriptions_{id}.yaml
-  /notifications:
-    $ref: paths/notifications.yaml
-  /notifications/{id}/read:
-    $ref: paths/notifications_{id}_read.yaml
->>>>>>> origin/main
   /notifications/settings:
     $ref: paths/notifications_settings.yaml
   /user/pairs:
     $ref: paths/user_pairs.yaml
-<<<<<<< HEAD
-=======
   /favorites:
     $ref: paths/favorites.yaml
   /favorites/{pair}:
     $ref: paths/favorites_pair.yaml
->>>>>>> origin/main
 components:
   schemas:
     RegisterRequest:
       $ref: components/schemas/RegisterRequest.yaml
-<<<<<<< HEAD
-=======
     User:
       $ref: components/schemas/User.yaml
     AuthResponse:
       $ref: components/schemas/AuthResponse.yaml
     Error:
       $ref: components/schemas/Error.yaml
->>>>>>> origin/main
     LoginRequest:
       $ref: components/schemas/LoginRequest.yaml
     RefreshTokenRequest:
       $ref: components/schemas/RefreshTokenRequest.yaml
-<<<<<<< HEAD
-    AuthResponse:
-      $ref: components/schemas/AuthResponse.yaml
-    User:
-      $ref: components/schemas/User.yaml
-=======
->>>>>>> origin/main
     Currency:
       $ref: components/schemas/Currency.yaml
     Rate:
@@ -111,11 +81,6 @@ components:
       $ref: components/schemas/NotificationSettingsUpdate.yaml
     UserPairsUpdate:
       $ref: components/schemas/UserPairsUpdate.yaml
-<<<<<<< HEAD
-    Error:
-      $ref: components/schemas/Error.yaml
-=======
->>>>>>> origin/main
   responses:
     ValidationError:
       $ref: components/responses/ValidationError.yaml
@@ -124,13 +89,8 @@ components:
     ServerError:
       $ref: components/responses/ServerError.yaml
   securitySchemes:
-<<<<<<< HEAD
-    BearerAuth:
-      $ref: components/securitySchemes/BearerAuth.yaml
-=======
     CookieAuth:
       $ref: components/securitySchemes/CookieAuth.yaml
->>>>>>> origin/main
 tags:
   - name: auth
     description: Аутентификация и регистрация
@@ -147,8 +107,4 @@ tags:
   - name: user
     description: Пользовательские настройки и предпочтения
 security:
-<<<<<<< HEAD
-  - BearerAuth: []
-=======
   - CookieAuth: []
->>>>>>> origin/main

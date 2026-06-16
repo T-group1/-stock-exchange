@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     quiet_hours_end VARCHAR(5)
 );
 
+-- Таблица избранных валют
+CREATE TABLE IF NOT EXISTS favorites (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code) ON DELETE CASCADE,
+    created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()))::BIGINT,
+    PRIMARY KEY (user_id, currency_code)
+);
+
 -- Индексы для производительности
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_active ON subscriptions(user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_currency ON subscriptions(currency_code);

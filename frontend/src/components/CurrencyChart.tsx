@@ -63,7 +63,6 @@ useEffect(() => {
 
   }, [baseCurrency, quoteCurrency, days]);
 
-
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };
     const rect = containerRef.current.getBoundingClientRect();

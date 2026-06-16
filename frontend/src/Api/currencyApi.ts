@@ -18,6 +18,7 @@ export const mockChanges: Record<string, number> = {
 };
 
 export async function fetchRates(): Promise<Record<string, number>> {
+<<<<<<< feature/frontend-fix
   try {
     const response = await fetch('/api/rates');
     
@@ -25,15 +26,13 @@ export async function fetchRates(): Promise<Record<string, number>> {
       throw new Error(`Ошибка сервера: ${response.status}`);
     }
     
-    // Сервер возвращает объект: { date: "...", rates: [{currency: "USD", rate: 90}, ...] }
     const responseData = await response.json();
     
-    // Превращаем массив от бэкенда в словарь { USD: 90, ... }, который ждет фронтенд
     const ratesRecord: Record<string, number> = {};
     
     if (responseData.rates && Array.isArray(responseData.rates)) {
       responseData.rates.forEach((item: any) => {
-        // Подставь здесь правильные ключи из Rate.yaml (скорее всего это currency и rate)
+
         const code = item.currency || item.code || item.id;
         const value = item.rate || item.value;
         if (code && value) {
@@ -53,7 +52,6 @@ export async function fetchRates(): Promise<Record<string, number>> {
 
 export async function fetchChartData(base: string, quote: string) {
   try {
-    // Бэкенд ждет пару строго через подчеркивание, например: USD_RUB
     const pair = `${base}_${quote}`.toUpperCase(); 
     
     const response = await fetch(`/api/rates/${pair}`);
@@ -63,8 +61,7 @@ export async function fetchChartData(base: string, quote: string) {
     }
     
     const responseData = await response.json();
-    
-    // Массив точек для графика лежит внутри поля data
+
     return responseData.data || responseData; 
 
   } catch (error) {
@@ -83,3 +80,4 @@ export async function fetchChartData(base: string, quote: string) {
     return mockData;
   }
 }
+main

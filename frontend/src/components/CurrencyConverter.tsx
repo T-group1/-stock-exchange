@@ -13,6 +13,7 @@ export default function CurrencyConverter({
   setTo 
 }: any) {
   const navigate = useNavigate();
+
   const [hoverFav, setHoverFav] = useState(false);
   const [amount, setAmount] = useState<number | "">(1); 
 
@@ -257,6 +258,7 @@ export default function CurrencyConverter({
           {user ? "Создать уведомление об этой паре" : "Войдите, чтобы настроить уведомления"}
         </button>
       </div>
+
     </div>
   );
 }

@@ -5,6 +5,7 @@ export default function FavoritesList({ favorites = [], setFavorites, setFrom, s
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
   const [hoveredTextId, setHoveredTextId] = useState<number | null>(null);
 
+
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const removeFavorite = (id: number) => {
@@ -54,6 +55,7 @@ export default function FavoritesList({ favorites = [], setFavorites, setFrom, s
           Список избранных пар пока пуст.
         </div>
       ) : (
+        
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {favorites.map((f: any, index: number) => (
             <div
@@ -64,6 +66,7 @@ export default function FavoritesList({ favorites = [], setFavorites, setFrom, s
               onDragEnd={handleDragEnd}
               onMouseEnter={() => setHoveredCardId(f.id)}
               onMouseLeave={() => { setHoveredCardId(null); setHoveredTextId(null); }}
+
               style={{
                 background: "#fff",
                 border: hoveredCardId === f.id ? "1px solid #7c3aed" : "1px solid #e2e8f0",
@@ -120,6 +123,7 @@ export default function FavoritesList({ favorites = [], setFavorites, setFrom, s
                   e.stopPropagation(); 
                   removeFavorite(f.id);
                 }}
+
                 onMouseEnter={() => setHoveredDeleteId(f.id)}
                 onMouseLeave={() => setHoveredDeleteId(null)}
                 style={{
