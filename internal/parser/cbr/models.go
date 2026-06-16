@@ -2,7 +2,7 @@ package cbr
 
 import "encoding/xml"
 
-// ValCurs — корневой элемент XML от ЦБ РФ
+// ValCurs — корневой элемент XML_daily.asp от ЦБ РФ (курсы валют)
 type ValCurs struct {
 	XMLName xml.Name `xml:"ValCurs"`
 	Date    string   `xml:"Date,attr"` // Формат: DD.MM.YYYY
@@ -10,15 +10,30 @@ type ValCurs struct {
 	Valutes []Valute `xml:"Valute"`
 }
 
-// Valute — одна валюта из XML
+// Valuta — корневой элемент XML_val.asp от ЦБ РФ (список валют)
+type Valuta struct {
+	XMLName xml.Name     `xml:"Valuta"`
+	Items   []ValutaItem `xml:"Item"`
+}
+
+// ValutaItem — одна валюта из XML_val.asp
+type ValutaItem struct {
+	ID       string `xml:"ID,attr"`
+	NumCode  string `xml:"NumCode"`
+	CharCode string `xml:"CharCode"`
+	Nominal  int    `xml:"Nominal"`
+	Name     string `xml:"Name"`
+}
+
+// Valute — одна валюта из XML_daily.asp
 type Valute struct {
-	ID        string `xml:"ID,attr"`   // Уникальный ID валюты (например, R01235)
-	NumCode   string `xml:"NumCode"`   // Цифровой код (840 для USD)
-	CharCode  string `xml:"CharCode"`  // Буквенный код (USD, EUR)
-	Nominal   int    `xml:"Nominal"`   // Номинал (1, 10, 100)
-	Name      string `xml:"Name"`      // Название на русском
-	Value     string `xml:"Value"`     // Курс за номинал (строка, разделитель — запятая)
-	VunitRate string `xml:"VunitRate"` // Курс за 1 единицу (строка, разделитель — запятая)
+	ID        string `xml:"ID,attr"`
+	NumCode   string `xml:"NumCode"`
+	CharCode  string `xml:"CharCode"`
+	Nominal   int    `xml:"Nominal"`
+	Name      string `xml:"Name"`
+	Value     string `xml:"Value"`
+	VunitRate string `xml:"VunitRate"`
 }
 
 // ParsedRate — нормализованная структура курса после парсинга

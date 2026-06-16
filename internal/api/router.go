@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"T_Project/internal/api/handlers"
 	customMiddleware "T_Project/internal/api/middleware"
@@ -21,7 +22,8 @@ func Router(queries db.Querier) http.Handler {
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.Compress(5))
-	r.Use(chiMiddleware.Timeout(30))
+	// ИСПРАВЛЕНО: 30 наносекунд → 30 секунд
+	r.Use(chiMiddleware.Timeout(30 * time.Second))
 
 	// Custom middleware
 	r.Use(customMiddleware.CORS)

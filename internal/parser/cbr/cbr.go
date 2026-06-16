@@ -38,13 +38,10 @@ func NewClient() *Client {
 }
 
 // GetDailyRates получает курсы валют на указанную дату
-// Если date пустая — получает на сегодня
 func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
-	// ИСПРАВЛЕНО: используем c.baseURL вместо глобальной константы
 	url := c.baseURL + "XML_daily.asp"
 
 	if !date.IsZero() {
-		// ЦБ РФ ожидает дату в формате DD/MM/YYYY
 		url = fmt.Sprintf("%s?date=%s", url, date.Format("02/01/2006"))
 	}
 
@@ -66,9 +63,9 @@ func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 	return c.parseValCurs(body)
 }
 
-// GetAllCurrencies получает список всех доступных валют (включая редкие)
+// GetAllCurrencies получает список всех доступных валют
+// ИСПРАВЛЕНО: теперь корректно парсит XML_val.asp
 func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
-	// ИСПРАВЛЕНО: используем c.baseURL
 	url := c.baseURL + "XML_val.asp?d=0"
 
 	resp, err := c.httpClient.Get(url)
@@ -86,17 +83,37 @@ func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return c.parseValCurs(body)
+	return c.parseValuta(body)
 }
 
-// parseValCurs парсит XML-ответ от ЦБ РФ
+// parseValuta парсит XML_val.asp (список валют без курсов)
+func (c *Client) parseValuta(data []byte) ([]ParsedRate, error) {
+	var valuta Valuta
+	if err := xml.Unmarshal(data, &valuta); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal Valuta XML: %w", err)
+	}
+
+	rates := make([]ParsedRate, 0, len(valuta.Items))
+	for _, item := range valuta.Items {
+		rates = append(rates, ParsedRate{
+			CharCode: item.CharCode,
+			Nominal:  item.Nominal,
+			Name:     item.Name,
+			Rate:     0,  // XML_val.asp не содержит курсов
+			Date:     "", // XML_val.asp не содержит даты
+		})
+	}
+
+	return rates, nil
+}
+
+// parseValCurs парсит XML_daily.asp (курсы валют)
 func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 	var valCurs ValCurs
 	if err := xml.Unmarshal(data, &valCurs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal XML: %w", err)
 	}
 
-	// Парсим дату из ValCurs (формат DD.MM.YYYY)
 	parsedDate, err := time.Parse(dateFormat, valCurs.Date)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse date %q: %w", valCurs.Date, err)
@@ -126,24 +143,20 @@ func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 }
 
 // parseCBRRate парсит одну валюту
-// ИСПРАВЛЕНО: улучшена логика для случая, когда VunitRate пустой
 func parseCBRRate(v Valute) (ParsedRate, error) {
 	var rate float64
 	var err error
 
 	if v.VunitRate != "" {
-		// Используем VunitRate (курс за 1 единицу), если доступен
 		rate, err = parseFloat(v.VunitRate)
 		if err != nil {
 			return ParsedRate{}, fmt.Errorf("failed to parse VunitRate: %w", err)
 		}
 	} else {
-		// Если VunitRate нет, используем Value
 		rate, err = parseFloat(v.Value)
 		if err != nil {
 			return ParsedRate{}, fmt.Errorf("failed to parse Value: %w", err)
 		}
-		// Если номинал > 1, делим на номинал для получения курса за 1 единицу
 		if v.Nominal > 1 {
 			rate = rate / float64(v.Nominal)
 		}
@@ -159,9 +172,7 @@ func parseCBRRate(v Valute) (ParsedRate, error) {
 
 // parseFloat парсит число с запятой как разделителем (формат ЦБ РФ)
 func parseFloat(s string) (float64, error) {
-	// ЦБ РФ использует запятую как десятичный разделитель
 	s = strings.Replace(s, ",", ".", 1)
 	s = strings.TrimSpace(s)
-
 	return strconv.ParseFloat(s, 64)
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"T_Project/internal/api/response"
 	"T_Project/internal/db"
@@ -49,24 +50,45 @@ func (h *ConvertHandler) Convert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем курсы
-	rates, err := h.queries.GetLatestRates(r.Context())
-	if err != nil {
-		response.InternalError(w, "Failed to fetch rates")
+	// ИСПРАВЛЕНО: обработка RUB → RUB
+	if req.From == req.To {
+		dateStr := time.Now().Format("2006-01-02")
+		if req.Date != "" {
+			dateStr = req.Date
+		}
+		response.WriteSuccess(w, ConversionResponse{
+			From:   req.From,
+			To:     req.To,
+			Amount: req.Amount,
+			Result: req.Amount,
+			Rate:   1.0,
+			Date:   dateStr,
+		})
 		return
 	}
 
-	// Создаём map курсов
-	rateMap := make(map[string]float64)
+	// ИСПРАВЛЕНО: поддержка исторической конвертации через Date
+	var rateMap map[string]rateInfo
 	var dateStr string
-	for _, rate := range rates {
-		rateFloat, err := rate.Rate.Float64Value()
-		if err != nil || !rateFloat.Valid {
-			continue
+	var err error
+
+	if req.Date != "" {
+		parsedDate, parseErr := time.Parse("2006-01-02", req.Date)
+		if parseErr != nil {
+			response.BadRequest(w, "Invalid date format. Use YYYY-MM-DD")
+			return
 		}
-		rateMap[rate.CurrencyCode] = rateFloat.Float64
-		if dateStr == "" {
-			dateStr = rate.RateDate.Time.Format("2006-01-02")
+		rateMap, err = getRateMapByDate(r.Context(), h.queries, parsedDate)
+		if err != nil {
+			response.InternalError(w, "Failed to fetch historical rates: "+err.Error())
+			return
+		}
+		dateStr = req.Date
+	} else {
+		rateMap, dateStr, err = getLatestRateMap(r.Context(), h.queries)
+		if err != nil {
+			response.InternalError(w, "Failed to fetch rates")
+			return
 		}
 	}
 
@@ -74,30 +96,27 @@ func (h *ConvertHandler) Convert(w http.ResponseWriter, r *http.Request) {
 	var conversionRate float64
 
 	if req.From == "RUB" {
-		// Из RUB в другую валюту
-		toRate, ok := rateMap[req.To]
-		if !ok || toRate == 0 {
+		toInfo, ok := rateMap[req.To]
+		if !ok || toInfo.Rate == 0 {
 			response.NotFound(w, "Rate not found for currency: "+req.To)
 			return
 		}
-		conversionRate = 1.0 / toRate
+		conversionRate = 1.0 / toInfo.Rate
 	} else if req.To == "RUB" {
-		// Из другой валюты в RUB
-		fromRate, ok := rateMap[req.From]
+		fromInfo, ok := rateMap[req.From]
 		if !ok {
 			response.NotFound(w, "Rate not found for currency: "+req.From)
 			return
 		}
-		conversionRate = fromRate
+		conversionRate = fromInfo.Rate
 	} else {
-		// Кросс-курс через RUB
-		fromRate, ok1 := rateMap[req.From]
-		toRate, ok2 := rateMap[req.To]
-		if !ok1 || !ok2 || toRate == 0 {
+		fromInfo, ok1 := rateMap[req.From]
+		toInfo, ok2 := rateMap[req.To]
+		if !ok1 || !ok2 || toInfo.Rate == 0 {
 			response.NotFound(w, "Rates not found for pair: "+req.From+"_"+req.To)
 			return
 		}
-		conversionRate = fromRate / toRate
+		conversionRate = fromInfo.Rate / toInfo.Rate
 	}
 
 	result := req.Amount * conversionRate

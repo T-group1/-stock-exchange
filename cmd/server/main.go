@@ -12,6 +12,9 @@ import (
 	"T_Project/internal/api"
 	"T_Project/internal/config"
 	"T_Project/internal/db"
+	"T_Project/internal/parser/cbr"
+	"T_Project/internal/service/rates"
+	"T_Project/internal/worker"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -36,6 +39,25 @@ func main() {
 
 	// Создаём sqlc queries
 	queries := db.New(pool)
+
+	// ИСПРАВЛЕНО: Инициализируем воркер для сбора данных
+	cbrClient := cbr.NewClient()
+	ratesService := rates.NewService(cbrClient, queries)
+	ratesWorker := worker.NewRatesWorker(ratesService, 1*time.Hour)
+
+	// Запускаем воркер в фоне
+	workerCtx, workerCancel := context.WithCancel(ctx)
+	defer workerCancel()
+	ratesWorker.Start(workerCtx)
+	log.Println("Rates worker started (interval: 1h)")
+
+	// Выполняем первичную синхронизацию и ждём её завершения
+	log.Println("Running initial sync...")
+	if err := ratesService.SyncToday(ctx); err != nil {
+		log.Printf("Initial sync failed (will retry in background): %v", err)
+	} else {
+		log.Println("Initial sync completed successfully")
+	}
 
 	// Создаём роутер
 	router := api.Router(queries)
@@ -63,6 +85,9 @@ func main() {
 	// Ждём сигнал завершения
 	<-quit
 	log.Println("Server is shutting down...")
+
+	// Останавливаем воркер
+	workerCancel()
 
 	// Graceful shutdown с таймаутом
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

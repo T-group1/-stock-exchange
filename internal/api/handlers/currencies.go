@@ -5,6 +5,8 @@ import (
 
 	"T_Project/internal/api/response"
 	"T_Project/internal/db"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // CurrenciesHandler обработчик эндпоинтов валют
@@ -45,9 +47,9 @@ func (h *CurrenciesHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByCode возвращает валюту по коду
+// ИСПРАВЛЕНО: используем chi.URLParam вместо r.URL.Query().Get("code")
 func (h *CurrenciesHandler) GetByCode(w http.ResponseWriter, r *http.Request) {
-	// Код валюты передаётся через query параметр или path variable
-	code := r.URL.Query().Get("code")
+	code := chi.URLParam(r, "code")
 	if code == "" {
 		response.BadRequest(w, "Currency code is required")
 		return

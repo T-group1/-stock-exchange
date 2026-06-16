@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -60,8 +61,18 @@ func Load() *Config {
 }
 
 // DSN возвращает строку подключения к БД
+// ИСПРАВЛЕНО: используем net/url для корректного экранирования пароля
 func (c *DatabaseConfig) DSN() string {
-	return "postgres://" + c.User + ":" + c.Password + "@" + c.Host + ":" + c.Port + "/" + c.DBName + "?sslmode=" + c.SSLMode
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(c.User, c.Password),
+		Host:   c.Host + ":" + c.Port,
+		Path:   c.DBName,
+	}
+	q := u.Query()
+	q.Set("sslmode", c.SSLMode)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 // Addr возвращает адрес для HTTP сервера
