@@ -5,9 +5,9 @@ services:
     image: mirror.gcr.io/postgres:16-alpine
     container_name: rates_backend_db
     environment:
-      POSTGRES_USER: rates_admin
-      POSTGRES_PASSWORD: rates_secure_pass
-      POSTGRES_DB: rates_db 
+      POSTGRES_USER: DB_USER
+      POSTGRES_PASSWORD: DB_PASSWORD
+      POSTGRES_DB: DB_NAME
     ports:
       - "5432:5432"
     volumes:
