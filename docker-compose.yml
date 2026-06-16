@@ -12,8 +12,7 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      # ВПИШИ СЮДА СВОЮ ПОЧТУ (любую рабочую), чтобы получить SSL сертификат!
-      - "--certificatesresolvers.myresolver.acme.email=твоя_почта@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.email=ketlukashenko@gmail.com"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "80:80"
