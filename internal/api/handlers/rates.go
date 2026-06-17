@@ -44,21 +44,19 @@ type HistoryResponse struct {
 
 // GetAll возвращает все последние курсы валют (ОПТИМИЗИРОВАНО: 1 запрос в БД)
 func (h *RatesHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	// 1. Делаем ровно ОДИН запрос в БД, который уже содержит change_percentage
 	rateMap, latestDate, err := getLatestRateMap(r.Context(), h.queries)
 	if err != nil {
 		http.Error(w, "Failed to fetch rates", http.StatusInternalServerError)
 		return
 	}
 
-	// 2. Формируем ответ, используя данные из памяти (без циклов с запросами в БД!)
 	response := make(map[string]interface{})
 	for code, info := range rateMap {
 		response[code] = map[string]interface{}{
 			"rate":              info.Rate,
 			"date":              info.Date,
 			"source":            info.Source,
-			"change_percentage": info.ChangePercentage, // <-- БЕРЁМ ИЗ ПАМЯТИ
+			"change_percentage": info.ChangePercentage,
 		}
 	}
 
@@ -77,12 +75,12 @@ func (h *RatesHandler) GetByPair(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Edge case: одинаковые валюты
+	// Edge case: одинаковые валюты — ИСПРАВЛЕНО: не делаем лишний запрос в БД
 	if base == quote {
 		respondWithJSON(w, http.StatusOK, RateResponse{
 			Pair:   pair,
 			Rate:   1.0,
-			Date:   time.Now().Format("2006-01-02"),
+			Date:   time.Now().Format("2006-01-02"), // Используем текущую дату
 			Base:   base,
 			Quote:  quote,
 			Source: "INTERNAL",
@@ -110,6 +108,7 @@ func (h *RatesHandler) GetByPair(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// ИСПРАВЛЕНО: проверка на ноль перед делением
 		quoteRatePerUnit := quoteInfo.Rate / float64(quoteCurr.Nominal)
 		if quoteRatePerUnit == 0 {
 			http.Error(w, "Invalid rate data (division by zero)", http.StatusInternalServerError)
@@ -144,7 +143,13 @@ func (h *RatesHandler) GetByPair(w http.ResponseWriter, r *http.Request) {
 	if quote == "RUB" {
 		baseCurr, err := h.queries.GetCurrencyByCode(r.Context(), base)
 		if err == nil {
-			resultRate = baseInfo.Rate / float64(baseCurr.Nominal)
+			// ИСПРАВЛЕНО: проверка на ноль перед делением
+			baseNominal := float64(baseCurr.Nominal)
+			if baseNominal == 0 {
+				http.Error(w, "Invalid currency nominal (division by zero)", http.StatusInternalServerError)
+				return
+			}
+			resultRate = baseInfo.Rate / baseNominal
 		} else {
 			resultRate = baseInfo.Rate // fallback
 		}
@@ -159,8 +164,17 @@ func (h *RatesHandler) GetByPair(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		baseRatePerRub := baseInfo.Rate / float64(baseCurr.Nominal)
-		quoteRatePerRub := quoteInfo.Rate / float64(quoteCurr.Nominal)
+		// ИСПРАВЛЕНО: проверки на ноль перед делением
+		baseNominal := float64(baseCurr.Nominal)
+		quoteNominal := float64(quoteCurr.Nominal)
+
+		if baseNominal == 0 || quoteNominal == 0 {
+			http.Error(w, "Invalid currency nominal (division by zero)", http.StatusInternalServerError)
+			return
+		}
+
+		baseRatePerRub := baseInfo.Rate / baseNominal
+		quoteRatePerRub := quoteInfo.Rate / quoteNominal
 
 		if quoteRatePerRub == 0 {
 			http.Error(w, "Invalid rate data (division by zero)", http.StatusInternalServerError)
@@ -206,6 +220,7 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		Valid: true,
 	}
 
+	// Edge case: одинаковые валюты
 	if base == quote {
 		var history []HistoryPoint
 		for i := 0; i <= days; i++ {
@@ -242,6 +257,12 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 		var history []HistoryPoint
 		quoteNominal := float64(quoteCurr.Nominal)
+
+		// ИСПРАВЛЕНО: проверка на ноль
+		if quoteNominal == 0 {
+			http.Error(w, "Invalid currency nominal", http.StatusInternalServerError)
+			return
+		}
 
 		for _, row := range historyRows {
 			rateFloat, err := row.Rate.Float64Value()
@@ -292,6 +313,12 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	quoteCurr, _ := h.queries.GetCurrencyByCode(r.Context(), quote)
 	baseNominal := float64(baseCurr.Nominal)
 	quoteNominal := float64(quoteCurr.Nominal)
+
+	// ИСПРАВЛЕНО: проверки на ноль
+	if baseNominal == 0 || quoteNominal == 0 {
+		http.Error(w, "Invalid currency nominal", http.StatusInternalServerError)
+		return
+	}
 
 	quoteMap := make(map[string]float64)
 	for _, row := range quoteHistory {

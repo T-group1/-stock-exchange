@@ -2,131 +2,215 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
-	"T_Project/internal/api/response"
 	"T_Project/internal/db"
 )
 
-// ConvertHandler обработчик эндпоинта конвертации
 type ConvertHandler struct {
 	queries db.Querier
 }
 
-// NewConvertHandler создаёт новый обработчик конвертации
 func NewConvertHandler(queries db.Querier) *ConvertHandler {
 	return &ConvertHandler{queries: queries}
 }
 
-// ConversionRequest DTO запроса
-type ConversionRequest struct {
+// ConvertRequest представляет запрос на конвертацию
+type ConvertRequest struct {
 	From   string  `json:"from"`
 	To     string  `json:"to"`
 	Amount float64 `json:"amount"`
 	Date   string  `json:"date,omitempty"` // опционально, формат YYYY-MM-DD
 }
 
-// ConversionResponse DTO ответа
-type ConversionResponse struct {
+// ConvertResponse представляет ответ конвертации
+type ConvertResponse struct {
 	From   string  `json:"from"`
 	To     string  `json:"to"`
 	Amount float64 `json:"amount"`
 	Result float64 `json:"result"`
 	Rate   float64 `json:"rate"`
 	Date   string  `json:"date"`
+	Source string  `json:"source"`
 }
 
-// Convert выполняет конвертацию валюты
+// Convert конвертирует одну валюту в другую
 func (h *ConvertHandler) Convert(w http.ResponseWriter, r *http.Request) {
-	var req ConversionRequest
+	var req ConvertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.BadRequest(w, "Invalid request body")
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.From == "" || req.To == "" || req.Amount <= 0 {
-		response.BadRequest(w, "Fields 'from', 'to' and 'amount' are required")
+		http.Error(w, "Invalid parameters: from, to, and amount > 0 are required", http.StatusBadRequest)
 		return
 	}
 
-	// ИСПРАВЛЕНО: обработка RUB → RUB
+	// Edge case: одинаковые валюты
 	if req.From == req.To {
-		dateStr := time.Now().Format("2006-01-02")
-		if req.Date != "" {
-			dateStr = req.Date
-		}
-		response.WriteSuccess(w, ConversionResponse{
+		respondWithJSON(w, http.StatusOK, ConvertResponse{
 			From:   req.From,
 			To:     req.To,
 			Amount: req.Amount,
 			Result: req.Amount,
 			Rate:   1.0,
-			Date:   dateStr,
+			Date:   time.Now().Format("2006-01-02"),
+			Source: "INTERNAL",
 		})
 		return
 	}
 
-	// ИСПРАВЛЕНО: поддержка исторической конвертации через Date
 	var rateMap map[string]rateInfo
 	var dateStr string
 	var err error
 
+	// Если указана дата, получаем курсы на эту дату
 	if req.Date != "" {
-		parsedDate, parseErr := time.Parse("2006-01-02", req.Date)
-		if parseErr != nil {
-			response.BadRequest(w, "Invalid date format. Use YYYY-MM-DD")
+		parsedDate, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			http.Error(w, "Invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
 			return
 		}
 		rateMap, err = getRateMapByDate(r.Context(), h.queries, parsedDate)
 		if err != nil {
-			response.InternalError(w, "Failed to fetch historical rates: "+err.Error())
+			http.Error(w, "Failed to fetch rates for date", http.StatusInternalServerError)
 			return
 		}
-		dateStr = req.Date
+		dateStr = parsedDate.Format("2006-01-02")
 	} else {
+		// Иначе получаем последние курсы
 		rateMap, dateStr, err = getLatestRateMap(r.Context(), h.queries)
 		if err != nil {
-			response.InternalError(w, "Failed to fetch rates")
+			http.Error(w, "Failed to fetch latest rates", http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// Вычисляем курс конвертации
-	var conversionRate float64
-
+	// Специальный случай: конвертация из RUB
 	if req.From == "RUB" {
-		toInfo, ok := rateMap[req.To]
-		if !ok || toInfo.Rate == 0 {
-			response.NotFound(w, "Rate not found for currency: "+req.To)
+		toCurr, err := h.queries.GetCurrencyByCode(r.Context(), req.To)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Currency not found: %s", req.To), http.StatusNotFound)
 			return
 		}
-		conversionRate = 1.0 / toInfo.Rate
-	} else if req.To == "RUB" {
-		fromInfo, ok := rateMap[req.From]
-		if !ok {
-			response.NotFound(w, "Rate not found for currency: "+req.From)
+
+		toInfo, exists := rateMap[req.To]
+		if !exists {
+			http.Error(w, fmt.Sprintf("Rate not found for currency: %s", req.To), http.StatusNotFound)
 			return
 		}
-		conversionRate = fromInfo.Rate
-	} else {
-		fromInfo, ok1 := rateMap[req.From]
-		toInfo, ok2 := rateMap[req.To]
-		if !ok1 || !ok2 || toInfo.Rate == 0 {
-			response.NotFound(w, "Rates not found for pair: "+req.From+"_"+req.To)
+
+		// ИСПРАВЛЕНО: проверка на ноль
+		toNominal := float64(toCurr.Nominal)
+		if toNominal == 0 {
+			http.Error(w, "Invalid currency nominal (division by zero)", http.StatusInternalServerError)
 			return
 		}
-		conversionRate = fromInfo.Rate / toInfo.Rate
+
+		toRatePerUnit := toInfo.Rate / toNominal
+		if toRatePerUnit == 0 {
+			http.Error(w, "Invalid rate data (division by zero)", http.StatusInternalServerError)
+			return
+		}
+
+		rate := 1.0 / toRatePerUnit
+		result := req.Amount * rate
+
+		respondWithJSON(w, http.StatusOK, ConvertResponse{
+			From:   req.From,
+			To:     req.To,
+			Amount: req.Amount,
+			Result: result,
+			Rate:   rate,
+			Date:   dateStr,
+			Source: toInfo.Source,
+		})
+		return
 	}
 
-	result := req.Amount * conversionRate
+	// Специальный случай: конвертация в RUB
+	if req.To == "RUB" {
+		fromCurr, err := h.queries.GetCurrencyByCode(r.Context(), req.From)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Currency not found: %s", req.From), http.StatusNotFound)
+			return
+		}
 
-	response.WriteSuccess(w, ConversionResponse{
+		fromInfo, exists := rateMap[req.From]
+		if !exists {
+			http.Error(w, fmt.Sprintf("Rate not found for currency: %s", req.From), http.StatusNotFound)
+			return
+		}
+
+		// ИСПРАВЛЕНО: проверка на ноль
+		fromNominal := float64(fromCurr.Nominal)
+		if fromNominal == 0 {
+			http.Error(w, "Invalid currency nominal (division by zero)", http.StatusInternalServerError)
+			return
+		}
+
+		rate := fromInfo.Rate / fromNominal
+		result := req.Amount * rate
+
+		respondWithJSON(w, http.StatusOK, ConvertResponse{
+			From:   req.From,
+			To:     req.To,
+			Amount: req.Amount,
+			Result: result,
+			Rate:   rate,
+			Date:   dateStr,
+			Source: fromInfo.Source,
+		})
+		return
+	}
+
+	// Кросс-курс через рубли
+	fromInfo, fromExists := rateMap[req.From]
+	toInfo, toExists := rateMap[req.To]
+
+	if !fromExists || !toExists {
+		http.Error(w, fmt.Sprintf("Rates not found for pair: %s_%s", req.From, req.To), http.StatusNotFound)
+		return
+	}
+
+	fromCurr, err1 := h.queries.GetCurrencyByCode(r.Context(), req.From)
+	toCurr, err2 := h.queries.GetCurrencyByCode(r.Context(), req.To)
+
+	if err1 != nil || err2 != nil {
+		http.Error(w, "Failed to fetch currency metadata", http.StatusInternalServerError)
+		return
+	}
+
+	// ИСПРАВЛЕНО: все проверки на ноль
+	fromNominal := float64(fromCurr.Nominal)
+	toNominal := float64(toCurr.Nominal)
+
+	if fromNominal == 0 || toNominal == 0 {
+		http.Error(w, "Invalid currency nominal (division by zero)", http.StatusInternalServerError)
+		return
+	}
+
+	fromRatePerRub := fromInfo.Rate / fromNominal
+	toRatePerRub := toInfo.Rate / toNominal
+
+	if toRatePerRub == 0 {
+		http.Error(w, "Invalid rate data (division by zero)", http.StatusInternalServerError)
+		return
+	}
+
+	rate := fromRatePerRub / toRatePerRub
+	result := req.Amount * rate
+
+	respondWithJSON(w, http.StatusOK, ConvertResponse{
 		From:   req.From,
 		To:     req.To,
 		Amount: req.Amount,
 		Result: result,
-		Rate:   conversionRate,
+		Rate:   rate,
 		Date:   dateStr,
+		Source: fmt.Sprintf("%s/%s", fromInfo.Source, toInfo.Source),
 	})
 }
