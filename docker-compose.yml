@@ -37,10 +37,15 @@ services:
     image: ghcr.io/t-group1/stock-exchange/backend:latest
     container_name: backend
     restart: always
-    # Базу данных мы тут не поднимаем, бэкенд будет подключаться к той, что дал препод (по IP)
+    environment:
+      DB_HOST: "212.8.228.70"
+      DB_PORT: "5432"
+      DB_USER: "team1"
+      DB_PASSWORD: "7LA4B1ud1p0g5sFbivb0"
+      DB_NAME: "event"
+      DB_SSLMODE: "require"
     labels:
       - "traefik.enable=true"
-      # Все запросы, начинающиеся на /api, летят сюда
       - "traefik.http.routers.backend.rule=Host(`team1.verstack.ru`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
