@@ -23,6 +23,7 @@ type Querier interface {
 	GetLatestRates(ctx context.Context) ([]CurrencyRate, error)
 	GetNotificationSettings(ctx context.Context, userID pgtype.UUID) (NotificationSetting, error)
 	GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error)
+	GetRatesByDate(ctx context.Context, rateDate pgtype.Date) ([]CurrencyRate, error)
 	GetSubscriptionByID(ctx context.Context, id pgtype.UUID) (Subscription, error)
 	GetUnreadCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)

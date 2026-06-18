@@ -13,6 +13,8 @@ paths:
     $ref: paths/auth_register.yaml
   /auth/login:
     $ref: paths/auth_login.yaml
+  /auth/verify:
+    $ref: paths/auth_verify.yaml
   /auth/refresh:
     $ref: paths/auth_refresh.yaml
   /auth/me:

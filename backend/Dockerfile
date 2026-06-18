@@ -5,7 +5,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o main-server ./...
+RUN go mod tidy
+RUN go build -o main-server ./cmd/server
 
 FROM alpine:latest
 WORKDIR /root/

@@ -1,0 +1,38 @@
+post:
+  summary: Подтверждение адреса электронной почты (верификация)
+  description: Активирует аккаунт пользователя по уникальному токену, полученному из ссылки в письме.
+  tags:
+    - auth
+  parameters:
+    - name: token
+      in: query
+      required: true
+      description: Уникальный токен верификации, который пришел на почту
+      schema:
+        type: string
+        example: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+  responses:
+    '200':
+      description: Почта успешно подтверждена. Пользователь активирован.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Email successfully verified"
+              user:
+                $ref: '../components/schemas/User.yaml'
+    '400':
+      description: Ошибка валидации (токен неверный, устарел или уже был использован)
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/Error.yaml'
+    '500':
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '../components/responses/ServerError.yaml'
