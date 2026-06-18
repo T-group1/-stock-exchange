@@ -1,4 +1,3 @@
-// Fake data base 
 export const mockRates: Record<string, number> = {
   USD: 92.45,
   EUR: 102.30,
@@ -12,7 +11,7 @@ export const mockRates: Record<string, number> = {
   SGD: 68.45,
   RUB: 1.00
 };
-// Changes in percent
+
 export const mockChanges: Record<string, number> = {
   USD: 1.2, EUR: -0.8, CNY: 0.5, GBP: 0.9, JPY: -0.3, CAD: 1.5, AUD: -1.1, CHF: 0.4, HKD: 0.7, SGD: -0.6
 };

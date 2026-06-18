@@ -28,40 +28,37 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
   const containerRef = useRef<HTMLDivElement>(null);
 
 useEffect(() => {
-    const loadData = async () => {
-      try {
-        const rawPoints = await fetchChartData(baseCurrency, quoteCurrency);
-        if (!Array.isArray(rawPoints)) return;
+  const loadData = async () => {
+    try {
+      const rawPoints = await fetchChartData(baseCurrency, quoteCurrency);
+      if (!Array.isArray(rawPoints)) return;
 
-        const getCalendarDate = (daysAgo: number) => {
-          const date = new Date();
-          date.setDate(date.getDate() - daysAgo);
-          return date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+      const chartPoints = rawPoints.slice(0, days);
+
+      const formattedData = chartPoints.map((p, i) => {
+        const displayDate = p.date 
+          ? new Date(p.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+          : (() => {
+              const d = new Date();
+              d.setDate(d.getDate() - i);
+              return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+            })();
+
+        return {
+          rate: p.rate,
+          date: displayDate
         };
-        let chartPoints = [...rawPoints];
+      });
 
-        if (days === 7) {
-          chartPoints = rawPoints.slice(0, 7);
-        } else if (days === 90) {
-          chartPoints = [...rawPoints, ...rawPoints, ...rawPoints].slice(0, 90);
-        } else {
-          chartPoints = rawPoints.slice(0, 30);
-        }
+      setData(formattedData.reverse());
+      
+    } catch (err) {
+      console.error("Ошибка при обработке данных для графика:", err);
+    }
+  };
+  loadData();
 
-        const formattedData = chartPoints.map((p, i) => ({
-          ...p,
-          date: getCalendarDate(i)
-        }));
-
-        setData(formattedData.reverse());
-        
-      } catch (err) {
-        console.error("Ошибка при обработке данных для графика:", err);
-      }
-    };
-    loadData();
-
-  }, [baseCurrency, quoteCurrency, days]);
+}, [baseCurrency, quoteCurrency, days]);
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };

@@ -21,6 +21,11 @@ export default function AuthPage({ setUser }: any) {
         setError("Пожалуйста, введите ваше имя для регистрации");
         return;
       }
+
+      if (password.length < 8) {
+      setError("Пароль должен быть не менее 8 символов");
+      return;
+    }
       
       const newUser = { name, email };
       setUser(newUser);

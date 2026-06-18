@@ -21,6 +21,31 @@ export default function Header({ user }: any) {
       fontFamily: "sans-serif"
     }}>
       
+      <div
+        onClick={() => navigate("/")}
+        style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer"}}
+      >
+        <img 
+          src="/logo.png" 
+          alt="Currency Logo" 
+          style={{ 
+            height: "125px", 
+            width: "120px", 
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+            flexShrink: 0
+          }} 
+        />
+        </div>
+
+<div style={{ 
+    display: "flex", 
+    flexDirection: "column", 
+    alignItems: "flex-start", 
+    textAlign: "left",
+    width: "max-content" 
+  }}></div>
+
       <div>
         <h1 
           onClick={() => navigate("/")}
@@ -29,13 +54,14 @@ export default function Header({ user }: any) {
             color: "#fff", 
             fontSize: "26px", 
             fontWeight: "800", 
-            letterSpacing: "-0.5px",
-            cursor: "pointer"
+            letterSpacing: "0.5px",
+            cursor: "pointer",
+            textAlign: "left"
           }}
         >
           Мониторинг валютных курсов 
         </h1>
-        <p style={{ margin: "6px 0 0 0", color: "#ddd6fe", fontSize: "14px", fontWeight: "400" }}>
+        <p style={{ margin: "6px 0 0 0", color: "#ddd6fe", fontSize: "14px", fontWeight: "400", textAlign: "left" }}>
           Интерактивный терминал конвертации и трендового анализа
         </p>
       </div>
