@@ -10,6 +10,7 @@ import NotificationManagerPage from "./pages/NotificationManagerPage";
 import CreateNotificationPage from "./pages/CreateNotificationPage";
 import CurrencyConverter from "./components/CurrencyConverter";
 import FavoritesList from "./components/FavoritesList";
+import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 
 export default function App() {
   const [from, setFrom] = useState("USD");
@@ -80,9 +81,9 @@ export default function App() {
               user={user} 
               notifications={notifications} 
               setNotifications={setNotifications} 
-              rates={rates} 
-            />
-          } />
+              rates={rates} />           
+              } />
+          <Route path="/currency/:pair" element={<CurrencyDetailPage rates={rates} />} />
         </Routes>
       </div>
     </Router>
