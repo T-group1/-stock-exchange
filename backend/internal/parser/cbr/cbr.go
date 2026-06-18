@@ -17,6 +17,15 @@ const (
 	dateFormat = "02.01.2006" // Формат даты ЦБ РФ
 )
 
+// Браузерные заголовки, чтобы ЦБ не резал запрос как бота.
+var browserHeaders = map[string]string{
+	"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+	"Accept":          "application/xml, text/xml, */*;q=0.8",
+	"Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+	"Accept-Encoding": "identity", // важно: не сжимаем, чтобы не возиться с gzip
+	"Connection":      "keep-alive",
+}
+
 // CBRClient — интерфейс для работы с API ЦБ РФ (для тестируемости)
 type CBRClient interface {
 	GetDailyRates(date time.Time) ([]ParsedRate, error)
@@ -34,9 +43,42 @@ func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: timeout,
+			// ВАЖНО: отключаем автоматическое разжатие gzip,
+			// т.к. мы явно просим identity в Accept-Encoding.
+			Transport: &http.Transport{
+				DisableCompression: true,
+			},
 		},
 		baseURL: "https://www.cbr.ru/scripts/",
 	}
+}
+
+// doRequest — единая точка входа для всех GET-запросов к ЦБ.
+// Сюда же можно потом добавить retry / backoff при 429/5xx.
+func (c *Client) doRequest(url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	for k, v := range browserHeaders {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("CBR returned status %d for %s", resp.StatusCode, url)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	return body, nil
 }
 
 // GetDailyRates получает курсы валют на указанную дату
@@ -46,27 +88,15 @@ func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 		url = fmt.Sprintf("%s?date=%s", url, date.Format("02/01/2006"))
 	}
 
-	resp, err := c.httpClient.Get(url)
+	body, err := c.doRequest(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch daily rates: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("CBR returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// ЦБ РФ отдаёт XML в кодировке windows-1251, конвертируем в UTF-8
 	utf8Body, err := decodeWindows1251(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
 	}
-
 	return c.parseValCurs(utf8Body)
 }
 
@@ -74,27 +104,15 @@ func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
 	url := c.baseURL + "XML_val.asp?d=0"
 
-	resp, err := c.httpClient.Get(url)
+	body, err := c.doRequest(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch all currencies: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("CBR returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// ЦБ РФ отдаёт XML в кодировке windows-1251, конвертируем в UTF-8
 	utf8Body, err := decodeWindows1251(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
 	}
-
 	return c.parseValuta(utf8Body)
 }
 
