@@ -1,6 +1,7 @@
 package cbr
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -26,7 +27,7 @@ var browserHeaders = map[string]string{
 	"Connection":      "keep-alive",
 }
 
-// CBRClient — интерфейс для работы с API ЦБ РФ (для тестируемости)
+// CBRClient — интерфейс для работы с API ЦБ РФ
 type CBRClient interface {
 	GetDailyRates(date time.Time) ([]ParsedRate, error)
 	GetAllCurrencies() ([]ParsedRate, error)
@@ -43,8 +44,6 @@ func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{
 			Timeout: timeout,
-			// ВАЖНО: отключаем автоматическое разжатие gzip,
-			// т.к. мы явно просим identity в Accept-Encoding.
 			Transport: &http.Transport{
 				DisableCompression: true,
 			},
@@ -53,8 +52,6 @@ func NewClient() *Client {
 	}
 }
 
-// doRequest — единая точка входа для всех GET-запросов к ЦБ.
-// Сюда же можно потом добавить retry / backoff при 429/5xx.
 func (c *Client) doRequest(url string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -81,6 +78,20 @@ func (c *Client) doRequest(url string) ([]byte, error) {
 	return body, nil
 }
 
+// unmarshalCBRXML - умный парсер, который знает русскую кодировку
+func unmarshalCBRXML(data []byte, v interface{}) error {
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
+		switch strings.ToLower(charset) {
+		case "windows-1251":
+			return charmap.Windows1251.NewDecoder().Reader(input), nil
+		default:
+			return nil, fmt.Errorf("unknown charset: %s", charset)
+		}
+	}
+	return decoder.Decode(v)
+}
+
 // GetDailyRates получает курсы валют на указанную дату
 func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 	url := c.baseURL + "XML_daily.asp"
@@ -93,11 +104,7 @@ func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to fetch daily rates: %w", err)
 	}
 
-	utf8Body, err := decodeWindows1251(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
-	}
-	return c.parseValCurs(utf8Body)
+	return c.parseValCurs(body)
 }
 
 // GetAllCurrencies получает список всех доступных валют
@@ -109,42 +116,26 @@ func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to fetch all currencies: %w", err)
 	}
 
-	utf8Body, err := decodeWindows1251(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
-	}
-	return c.parseValuta(utf8Body)
+	return c.parseValuta(body)
 }
 
-// decodeWindows1251 декодирует байты из кодировки windows-1251 в UTF-8
-func decodeWindows1251(data []byte) ([]byte, error) {
-	decoder := charmap.Windows1251.NewDecoder()
-	utf8Bytes, err := decoder.Bytes(data)
-	if err != nil {
-		return nil, fmt.Errorf("windows-1251 decoding failed: %w", err)
-	}
-	return utf8Bytes, nil
-}
-
-// parseValuta парсит XML_val.asp (список валют без курсов)
 func (c *Client) parseValuta(data []byte) ([]ParsedRate, error) {
 	var valuta Valuta
-	if err := xml.Unmarshal(data, &valuta); err != nil {
+	if err := unmarshalCBRXML(data, &valuta); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal Valuta XML: %w", err)
 	}
 
-	rates := make([]ParsedRate, 0, len(valuta.Items)+1) // +1 для RUB
+	rates := make([]ParsedRate, 0, len(valuta.Items)+1)
 	for _, item := range valuta.Items {
 		rates = append(rates, ParsedRate{
 			CharCode: item.CharCode,
 			Nominal:  item.Nominal,
 			Name:     item.Name,
-			Rate:     0,  // XML_val.asp не содержит курсов
-			Date:     "", // XML_val.asp не содержит даты
+			Rate:     0,
+			Date:     "",
 		})
 	}
 
-	// ДОБАВЛЕНО: ЦБ РФ не включает RUB в XML_val.asp, добавляем вручную
 	rates = append(rates, ParsedRate{
 		CharCode: "RUB",
 		Nominal:  1,
@@ -156,10 +147,9 @@ func (c *Client) parseValuta(data []byte) ([]ParsedRate, error) {
 	return rates, nil
 }
 
-// parseValCurs парсит XML_daily.asp (курсы валют)
 func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 	var valCurs ValCurs
-	if err := xml.Unmarshal(data, &valCurs); err != nil {
+	if err := unmarshalCBRXML(data, &valCurs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal XML: %w", err)
 	}
 
@@ -169,7 +159,7 @@ func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 	}
 	isoDate := parsedDate.Format("2006-01-02")
 
-	rates := make([]ParsedRate, 0, len(valCurs.Valutes)+1) // +1 для RUB
+	rates := make([]ParsedRate, 0, len(valCurs.Valutes)+1)
 	for _, v := range valCurs.Valutes {
 		rate, err := parseCBRRate(v)
 		if err != nil {
@@ -179,7 +169,6 @@ func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 		rates = append(rates, rate)
 	}
 
-	// Добавляем RUB с курсом 1.0
 	rates = append(rates, ParsedRate{
 		CharCode: "RUB",
 		Nominal:  1,
@@ -191,7 +180,6 @@ func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 	return rates, nil
 }
 
-// parseCBRRate парсит одну валюту
 func parseCBRRate(v Valute) (ParsedRate, error) {
 	var rate float64
 	var err error
@@ -219,7 +207,6 @@ func parseCBRRate(v Valute) (ParsedRate, error) {
 	}, nil
 }
 
-// parseFloat парсит число с запятой как разделителем (формат ЦБ РФ)
 func parseFloat(s string) (float64, error) {
 	s = strings.Replace(s, ",", ".", 1)
 	s = strings.TrimSpace(s)
