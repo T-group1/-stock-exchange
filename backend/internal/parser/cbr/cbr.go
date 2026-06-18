@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 const (
@@ -40,7 +42,6 @@ func NewClient() *Client {
 // GetDailyRates получает курсы валют на указанную дату
 func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 	url := c.baseURL + "XML_daily.asp"
-
 	if !date.IsZero() {
 		url = fmt.Sprintf("%s?date=%s", url, date.Format("02/01/2006"))
 	}
@@ -60,11 +61,16 @@ func (c *Client) GetDailyRates(date time.Time) ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return c.parseValCurs(body)
+	// ЦБ РФ отдаёт XML в кодировке windows-1251, конвертируем в UTF-8
+	utf8Body, err := decodeWindows1251(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
+	}
+
+	return c.parseValCurs(utf8Body)
 }
 
 // GetAllCurrencies получает список всех доступных валют
-// ИСПРАВЛЕНО: теперь корректно парсит XML_val.asp
 func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
 	url := c.baseURL + "XML_val.asp?d=0"
 
@@ -83,7 +89,23 @@ func (c *Client) GetAllCurrencies() ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return c.parseValuta(body)
+	// ЦБ РФ отдаёт XML в кодировке windows-1251, конвертируем в UTF-8
+	utf8Body, err := decodeWindows1251(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode windows-1251: %w", err)
+	}
+
+	return c.parseValuta(utf8Body)
+}
+
+// decodeWindows1251 декодирует байты из кодировки windows-1251 в UTF-8
+func decodeWindows1251(data []byte) ([]byte, error) {
+	decoder := charmap.Windows1251.NewDecoder()
+	utf8Bytes, err := decoder.Bytes(data)
+	if err != nil {
+		return nil, fmt.Errorf("windows-1251 decoding failed: %w", err)
+	}
+	return utf8Bytes, nil
 }
 
 // parseValuta парсит XML_val.asp (список валют без курсов)
@@ -93,7 +115,7 @@ func (c *Client) parseValuta(data []byte) ([]ParsedRate, error) {
 		return nil, fmt.Errorf("failed to unmarshal Valuta XML: %w", err)
 	}
 
-	rates := make([]ParsedRate, 0, len(valuta.Items))
+	rates := make([]ParsedRate, 0, len(valuta.Items)+1) // +1 для RUB
 	for _, item := range valuta.Items {
 		rates = append(rates, ParsedRate{
 			CharCode: item.CharCode,
@@ -103,6 +125,15 @@ func (c *Client) parseValuta(data []byte) ([]ParsedRate, error) {
 			Date:     "", // XML_val.asp не содержит даты
 		})
 	}
+
+	// ДОБАВЛЕНО: ЦБ РФ не включает RUB в XML_val.asp, добавляем вручную
+	rates = append(rates, ParsedRate{
+		CharCode: "RUB",
+		Nominal:  1,
+		Name:     "Российский рубль",
+		Rate:     0,
+		Date:     "",
+	})
 
 	return rates, nil
 }
@@ -120,7 +151,7 @@ func (c *Client) parseValCurs(data []byte) ([]ParsedRate, error) {
 	}
 	isoDate := parsedDate.Format("2006-01-02")
 
-	rates := make([]ParsedRate, 0, len(valCurs.Valutes))
+	rates := make([]ParsedRate, 0, len(valCurs.Valutes)+1) // +1 для RUB
 	for _, v := range valCurs.Valutes {
 		rate, err := parseCBRRate(v)
 		if err != nil {
