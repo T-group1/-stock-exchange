@@ -15,9 +15,9 @@ const createRate = `-- name: CreateRate :one
 INSERT INTO currency_rates (currency_code, rate, rate_date, source, change_percentage)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (currency_code, rate_date) DO UPDATE SET
-  rate = EXCLUDED.rate,
-  source = EXCLUDED.source,
-  change_percentage = EXCLUDED.change_percentage
+    rate = EXCLUDED.rate,
+    source = EXCLUDED.source,
+    change_percentage = EXCLUDED.change_percentage
 RETURNING id, currency_code, rate, rate_date, source, change_percentage
 `
 
@@ -61,7 +61,7 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CurrencyRate{}
+	var items []CurrencyRate
 	for rows.Next() {
 		var i CurrencyRate
 		if err := rows.Scan(
@@ -105,10 +105,44 @@ func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) 
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetRateHistoryRow{}
+	var items []GetRateHistoryRow
 	for rows.Next() {
 		var i GetRateHistoryRow
 		if err := rows.Scan(&i.Rate, &i.RateDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRatesByDate = `-- name: GetRatesByDate :many
+SELECT id, currency_code, rate, rate_date, source, change_percentage
+FROM currency_rates
+WHERE rate_date = $1
+ORDER BY currency_code
+`
+
+func (q *Queries) GetRatesByDate(ctx context.Context, rateDate pgtype.Date) ([]CurrencyRate, error) {
+	rows, err := q.db.Query(ctx, getRatesByDate, rateDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CurrencyRate
+	for rows.Next() {
+		var i CurrencyRate
+		if err := rows.Scan(
+			&i.ID,
+			&i.CurrencyCode,
+			&i.Rate,
+			&i.RateDate,
+			&i.Source,
+			&i.ChangePercentage,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
