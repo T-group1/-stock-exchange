@@ -38,7 +38,6 @@ func Auth(jwtService *auth.JWTService) func(http.Handler) http.Handler {
 			}
 
 			// Кладём user_id в context
-			// Кладём user_id в context
 			userID, ok := claims["sub"].(string)
 			if !ok {
 				response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid token claims")
