@@ -42,6 +42,7 @@ type Querier interface {
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
 	// Удаление валюты из избранного
 	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
+	UpdateVerificationToken(ctx context.Context, arg UpdateVerificationTokenParams) (User, error)
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
 }
 
