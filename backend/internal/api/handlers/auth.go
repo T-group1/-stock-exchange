@@ -224,8 +224,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ИСПРАВЛЕНИЕ ЭТАПА 6: Проверяем Valid перед обращением к Bool
 	// Проверяем, подтвержден ли email
-	if !user.IsVerified.Bool {
+	if !user.IsVerified.Valid || !user.IsVerified.Bool {
 		respondError(w, http.StatusForbidden, "Please verify your email before logging in")
 		return
 	}
