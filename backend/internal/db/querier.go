@@ -33,7 +33,6 @@ type Querier interface {
 	GetUnreadCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
-	GetUserByVerificationToken(ctx context.Context, arg GetUserByVerificationTokenParams) (User, error)
 	// Получение только кодов (удобно, если в API нужно просто проверить, что валюта в избранном)
 	GetUserFavoriteCodes(ctx context.Context, userID pgtype.UUID) ([]string, error)
 	// Получение полного списка избранных валют с их названиями (для красивого JSON в API)
@@ -44,7 +43,6 @@ type Querier interface {
 	// Удаление валюты из избранного
 	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
-	VerifyUser(ctx context.Context, arg VerifyUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
