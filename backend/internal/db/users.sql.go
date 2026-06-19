@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, password_hash)
 VALUES ($1, $2, $3)
-RETURNING id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at
+RETURNING id, email, name, password_hash, created_at
 `
 
 type CreateUserParams struct {
@@ -31,16 +31,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.Name,
 		&i.PasswordHash,
-		&i.IsVerified,
-		&i.VerificationToken,
-		&i.VerificationTokenExpires,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at FROM users
+SELECT id, email, name, password_hash, created_at FROM users
 WHERE email = $1
 `
 
@@ -52,16 +49,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Email,
 		&i.Name,
 		&i.PasswordHash,
-		&i.IsVerified,
-		&i.VerificationToken,
-		&i.VerificationTokenExpires,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at FROM users
+SELECT id, email, name, password_hash, created_at FROM users
 WHERE id = $1
 `
 
@@ -73,9 +67,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.Email,
 		&i.Name,
 		&i.PasswordHash,
-		&i.IsVerified,
-		&i.VerificationToken,
-		&i.VerificationTokenExpires,
 		&i.CreatedAt,
 	)
 	return i, err

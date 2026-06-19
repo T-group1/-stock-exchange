@@ -12,7 +12,6 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Logger   LoggerConfig
-	JWT      JWTConfig // <-- ДОБАВЛЕНО
 }
 
 // ServerConfig конфигурация HTTP сервера
@@ -38,13 +37,6 @@ type LoggerConfig struct {
 	Level string
 }
 
-// JWTConfig конфигурация JWT <-- ДОБАВЛЕНО
-type JWTConfig struct {
-	Secret             string
-	AccessTokenExpiry  time.Duration
-	RefreshTokenExpiry time.Duration
-}
-
 // Load загружает конфигурацию из переменных окружения
 func Load() *Config {
 	return &Config{
@@ -65,15 +57,11 @@ func Load() *Config {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
-		JWT: JWTConfig{ // <-- ДОБАВЛЕНО
-			Secret:             getEnv("JWT_SECRET", "super-secret-key-change-me"),
-			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60),      // 15 минут в секундах
-			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60), // 7 дней в секундах
-		},
 	}
 }
 
 // DSN возвращает строку подключения к БД
+// ИСПРАВЛЕНО: используем net/url для корректного экранирования пароля
 func (c *DatabaseConfig) DSN() string {
 	u := &url.URL{
 		Scheme: "postgres",

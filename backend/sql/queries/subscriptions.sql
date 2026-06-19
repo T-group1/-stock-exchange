@@ -19,7 +19,3 @@ WHERE id = $1;
 -- name: GetSubscriptionByID :one
 SELECT * FROM subscriptions
 WHERE id = $1;
-
--- name: GetActiveSubscriptions :many
-SELECT * FROM subscriptions
-WHERE is_active = true;

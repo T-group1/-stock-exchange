@@ -65,10 +65,10 @@ export async function fetchRates(): Promise<any> {
   }
 }
 
-
 export async function fetchChartData(base: string, quote: string) {
   try {
     const pair = `${base}_${quote}`.toUpperCase();
+
     const response = await fetch(`/api/rates/${pair}`);
 
     if (!response.ok) {
@@ -77,20 +77,10 @@ export async function fetchChartData(base: string, quote: string) {
 
     const responseData = await response.json();
 
-    
-    if (responseData && typeof responseData === 'object') {
-       const values = Object.values(responseData);
-       const arrayData = values.find(v => Array.isArray(v));
-       
-       if (arrayData) return arrayData; 
-       if (responseData.data) return responseData.data; 
-    }
-
-    return responseData; 
+    return responseData.data || responseData;
 
   } catch (error) {
-    console.error("Не удалось загрузить график:", error);
-  }
+    console.error("Не удалось загрузить график, генерируем моки:", error);
 
     const baseRate = mockRates[base] / (mockRates[quote] || 1);
     const mockData = [];
@@ -104,4 +94,4 @@ export async function fetchChartData(base: string, quote: string) {
 
     return mockData;
   }
-
+}

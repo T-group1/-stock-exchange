@@ -40,7 +40,7 @@ func main() {
 	// Создаём sqlc queries
 	queries := db.New(pool)
 
-	// Инициализируем воркер для сбора данных
+	// ИСПРАВЛЕНО: Инициализируем воркер для сбора данных
 	cbrClient := cbr.NewClient()
 	ratesService := rates.NewService(cbrClient, queries)
 	ratesWorker := worker.NewRatesWorker(ratesService, 1*time.Hour)
@@ -51,12 +51,7 @@ func main() {
 	ratesWorker.Start(workerCtx)
 	log.Println("Rates worker started (interval: 1h)")
 
-	// Запускаем воркер алертов (проверяет каждые 30 секунд)
-	alertsWorker := worker.NewAlertsWorker(queries, 30*time.Second)
-	go alertsWorker.Start(workerCtx)
-	log.Println("Alerts worker started (interval: 30s)")
-
-	// Выполняем первичную синхронизацию
+	// Выполняем первичную синхронизацию и ждём её завершения
 	log.Println("Running initial sync...")
 	if err := ratesService.SyncToday(ctx); err != nil {
 		log.Printf("Initial sync failed (will retry in background): %v", err)
@@ -65,7 +60,7 @@ func main() {
 	}
 
 	// Создаём роутер
-	router := api.Router(queries, cfg)
+	router := api.Router(queries)
 
 	// Создаём HTTP сервер
 	srv := &http.Server{

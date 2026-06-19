@@ -13,9 +13,7 @@ export default function CreateNotificationPage({ user, notifications, setNotific
   const [hoverBack, setHoverBack] = useState(false);
   const [error, setError] = useState("");
 
-  const currencies = rates 
-    ? Object.keys(rates).filter(key => key !== 'date' && key !== 'pair' && key !== 'rate') 
-    : ["USD", "RUB", "EUR"];
+  const currencies = ["USD", "RUB", "EUR", "CNY", "GBP", "JPY", "AUD", "CAD", "SGD", "CHF"];
 
   if (!user) {
     return (
@@ -112,7 +110,7 @@ export default function CreateNotificationPage({ user, notifications, setNotific
           <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Текущий рыночный курс:</span>
           <span style={{ fontSize: "16px", color: "#7c3aed", fontWeight: "700" }}>
             {rates && rates[from] && rates[to] ? (
-              `1 ${from} = ${(rates[from] / rates[to]).toFixed(4)} ${to}`
+              `1 ${from} = ${(rates[to] / rates[from]).toFixed(4)} ${to}`
             ) : (
               "Загрузка курсов..."
             )}

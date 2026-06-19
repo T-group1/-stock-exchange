@@ -20,7 +20,7 @@ type rateInfo struct {
 	Rate             float64
 	Date             string
 	Source           string
-	ChangePercentage float64 
+	ChangePercentage float64 // <-- ДОБАВЛЕНО: для устранения N+1 запросов
 }
 
 // getLatestRateMap возвращает map[CharCode]rateInfo для всех последних курсов
@@ -44,6 +44,7 @@ func getLatestRateMap(ctx context.Context, queries db.Querier) (map[string]rateI
 			latestDate = dateStr
 		}
 
+		// Безопасное извлечение change_percentage
 		var changePct float64
 		changePctVal, err := rate.ChangePercentage.Float64Value()
 		if err == nil && changePctVal.Valid {
@@ -55,7 +56,7 @@ func getLatestRateMap(ctx context.Context, queries db.Querier) (map[string]rateI
 			Rate:             rateFloat.Float64,
 			Date:             dateStr,
 			Source:           rate.Source,
-			ChangePercentage: changePct,
+			ChangePercentage: changePct, // <-- ДОБАВЛЕНО
 		}
 	}
 
@@ -125,22 +126,4 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
-}
-
-// --- НОВЫЕ ФУНКЦИИ ДЛЯ auth.go ---
-
-// parseJSON декодирует JSON из тела запроса в указанную структуру
-func parseJSON(r *http.Request, v any) error {
-	defer r.Body.Close()
-	return json.NewDecoder(r.Body).Decode(v)
-}
-
-// respondJSON отправляет JSON-ответ с указанным статусом
-func respondJSON(w http.ResponseWriter, status int, data any) {
-	respondWithJSON(w, status, data)
-}
-
-// respondError отправляет ответ с ошибкой в формате JSON
-func respondError(w http.ResponseWriter, status int, message string) {
-	respondWithJSON(w, status, map[string]string{"error": message})
 }

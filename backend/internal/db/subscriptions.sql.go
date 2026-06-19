@@ -61,40 +61,6 @@ func (q *Queries) DeactivateSubscription(ctx context.Context, arg DeactivateSubs
 	return err
 }
 
-const getActiveSubscriptions = `-- name: GetActiveSubscriptions :many
-SELECT id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
-WHERE is_active = true
-`
-
-func (q *Queries) GetActiveSubscriptions(ctx context.Context) ([]Subscription, error) {
-	rows, err := q.db.Query(ctx, getActiveSubscriptions)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Subscription{}
-	for rows.Next() {
-		var i Subscription
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.CurrencyCode,
-			&i.RateValue,
-			&i.Condition,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.TriggeredAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getActiveSubscriptionsForCurrency = `-- name: GetActiveSubscriptionsForCurrency :many
 SELECT id, user_id, currency_code, rate_value, condition, is_active, created_at, triggered_at FROM subscriptions
 WHERE currency_code = $1 AND is_active = true

@@ -31,47 +31,36 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
     const loadData = async () => {
       try {
         const response = await fetchChartData(baseCurrency, quoteCurrency);
-        
-        let rawPoints: any[] = [];
-        if (Array.isArray(response)) {
-          rawPoints = response;
-        } else if (response && typeof response === "object") {
-          const keys = Object.keys(response);
-          const foundKey = keys.find(k => Array.isArray(response[k]));
-          rawPoints = foundKey ? response[foundKey] : (response.data || []);
-        }
+
+        // Если сервер вернул объект с полем data, берем его. 
+        // Если вернул сразу массив — берем его. Если что-то иное — пустой массив.
+        const rawPoints = Array.isArray(response) ? response : (response?.data || []);
 
         if (rawPoints.length === 0) {
-          console.warn("Данные для графика отсутствуют или пустой массив");
+          console.warn("Данные пусты или не в том формате");
           setData([]);
           return;
         }
 
-        const formattedData = rawPoints.map((p: any, i: number) => {
-          const val = typeof p === 'object' && p !== null 
-            ? (p.rate || p.value || p.price || 0) 
-            : p;
-            
-          const extractedRate = Number(val) || 0;
+        const formattedData = rawPoints.map((p: any) => {
+          // Безопасное создание даты
+          const dateObj = p.date ? new Date(p.date) : new Date();
+          const displayDate = !isNaN(dateObj.getTime())
+            ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+            : "н/д";
 
-          const dateVal = p && p.date ? p.date : null;
-          const dateObj = dateVal ? new Date(dateVal) : null;
-          const displayDate = (dateObj && !isNaN(dateObj.getTime()))
-              ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-              : `День ${i + 1}`;
-
-          return { rate: extractedRate, date: displayDate };
+          return {
+            rate: Number(p.rate) || 0, // Принудительно число
+            date: displayDate
+          };
         });
 
-        setData(formattedData.slice(0, days).reverse());
-
+        setData(formattedData.slice(-days).reverse());
       } catch (err) {
-        console.error("Ошибка при подготовке данных графика:", err);
-
+        console.error("Ошибка при загрузке графика:", err);
         setData([]);
       }
     };
-    
     loadData();
   }, [baseCurrency, quoteCurrency, days]);
 

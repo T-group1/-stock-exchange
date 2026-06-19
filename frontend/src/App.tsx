@@ -15,38 +15,10 @@ import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 export default function App() {
   const [from, setFrom] = useState("USD");
   const [to, setTo] = useState("RUB");
-
-  const [user, setUser] = useState<any>(() => {
-    const saved = localStorage.getItem("user");
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  const [favorites, setFavorites] = useState<any[]>(() => {
-    const saved = localStorage.getItem("favorites");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [notifications, setNotifications] = useState<any[]>(() => {
-    const saved = localStorage.getItem("notifications");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [rates, setRates] = useState<any>({ pair: "USD_RUB", rate: 73.3591 });
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-  }, [favorites]);
-
-  useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications));
-  }, [notifications]);
+  const [user, setUser] = useState<any>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [rates, setRates] = useState<any>({pair: "USD_RUB", rate: 73.3591 }); 
 
   useEffect(() => {
     console.log(`=== НАЧАЛО ЗАПРОСА ДЛЯ ПАРЫ: ${from}_${to} ===`);
@@ -69,10 +41,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={
             <div>
-              <CurrencyConverter
-                rates={rates}
-                user={user}
-                favorites={favorites}
+              <CurrencyConverter 
+                rates={rates} 
+                user={user} 
+                favorites={favorites} 
                 setFavorites={setFavorites}
                 from={from}
                 setFrom={setFrom}
@@ -81,37 +53,37 @@ export default function App() {
               />
 
               {user && (
-                <FavoritesList
-                  favorites={favorites}
-                  setFavorites={setFavorites}
-                  setFrom={setFrom}
-                  setTo={setTo}
+                <FavoritesList 
+                  favorites={favorites} 
+                  setFavorites={setFavorites} 
+                  setFrom={setFrom} 
+                  setTo={setTo} 
                 />
               )}
             </div>
           } />
 
           <Route path="/auth" element={<AuthPage setUser={setUser} />} />
-
+          
           <Route path="/verify-email" element={<VerifyEmailPage setUser={setUser} />} />
-
+          
           <Route path="/profile" element={
-            <NotificationManagerPage
-              user={user}
-              setUser={setUser}
-              notifications={notifications}
-              setNotifications={setNotifications}
+            <NotificationManagerPage 
+              user={user} 
+              setUser={setUser} 
+              notifications={notifications} 
+              setNotifications={setNotifications} 
               setFavorites={setFavorites}
             />
           } />
 
           <Route path="/create-notification" element={
-            <CreateNotificationPage
-              user={user}
-              notifications={notifications}
-              setNotifications={setNotifications}
-              rates={rates} />
-          } />
+            <CreateNotificationPage 
+              user={user} 
+              notifications={notifications} 
+              setNotifications={setNotifications} 
+              rates={rates} />           
+              } />
           <Route path="/currency/:pair" element={<CurrencyDetailPage rates={rates} />} />
         </Routes>
       </div>
