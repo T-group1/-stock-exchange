@@ -13,7 +13,7 @@ type EmailService struct {
 	username    string
 	password    string
 	from        string
-	frontendURL string // <--- ДОБАВЛЕНО
+	frontendURL string
 }
 
 func NewEmailService(host, port, username, password, from, frontendURL string) *EmailService {
@@ -48,8 +48,7 @@ func (s *EmailService) SendVerificationEmail(to, token string) error {
 	}
 
 	subject := "Подтверждение регистрации на бирже валют"
-	body := fmt.Sprintf(`
-<!DOCTYPE html>
+	body := fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -65,12 +64,11 @@ func (s *EmailService) SendVerificationEmail(to, token string) error {
     <hr>
     <p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
 </body>
-</html>
-`, verifyURL, verifyURL)
+</html>`, verifyURL, verifyURL)
 
 	auth := smtp.PlainAuth("", s.username, s.password, s.host)
 
-	// ИСПРАВЛЕНО: rn заменено на \r\n (стандарт SMTP)
+	// ИСПРАВЛЕНО ЭТАП 7: rn заменено на \r\n (стандарт SMTP)
 	msg := fmt.Sprintf("From: %s\r\n"+
 		"To: %s\r\n"+
 		"Subject: %s\r\n"+
