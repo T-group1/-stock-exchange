@@ -12,19 +12,29 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, name, password_hash)
-VALUES ($1, $2, $3)
+INSERT INTO users (email, name, password_hash, is_verified, verification_token, verification_token_expires)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at
 `
 
 type CreateUserParams struct {
-	Email        string `json:"email"`
-	Name         string `json:"name"`
-	PasswordHash string `json:"password_hash"`
+	Email                    string      `json:"email"`
+	Name                     string      `json:"name"`
+	PasswordHash             string      `json:"password_hash"`
+	IsVerified               pgtype.Bool `json:"is_verified"`
+	VerificationToken        pgtype.Text `json:"verification_token"`
+	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Name, arg.PasswordHash)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Email,
+		arg.Name,
+		arg.PasswordHash,
+		arg.IsVerified,
+		arg.VerificationToken,
+		arg.VerificationTokenExpires,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -67,6 +77,67 @@ WHERE id = $1
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.PasswordHash,
+		&i.IsVerified,
+		&i.VerificationToken,
+		&i.VerificationTokenExpires,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateVerificationToken = `-- name: UpdateVerificationToken :one
+UPDATE users
+SET verification_token = $1,
+    verification_token_expires = $2
+WHERE id = $3
+RETURNING id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at
+`
+
+type UpdateVerificationTokenParams struct {
+	VerificationToken        pgtype.Text `json:"verification_token"`
+	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
+	ID                       pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateVerificationToken(ctx context.Context, arg UpdateVerificationTokenParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateVerificationToken, arg.VerificationToken, arg.VerificationTokenExpires, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.PasswordHash,
+		&i.IsVerified,
+		&i.VerificationToken,
+		&i.VerificationTokenExpires,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const verifyUser = `-- name: VerifyUser :one
+UPDATE users
+SET is_verified = true,
+    verification_token = NULL,
+    verification_token_expires = NULL
+WHERE verification_token = $1
+  AND verification_token_expires > $2
+RETURNING id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at
+`
+
+type VerifyUserParams struct {
+	VerificationToken        pgtype.Text `json:"verification_token"`
+	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
+}
+
+func (q *Queries) VerifyUser(ctx context.Context, arg VerifyUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, verifyUser, arg.VerificationToken, arg.VerificationTokenExpires)
 	var i User
 	err := row.Scan(
 		&i.ID,
