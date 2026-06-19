@@ -37,7 +37,7 @@ func NewAuthHandler(queries db.Querier, cfg *config.Config) *AuthHandler {
 		cfg.SMTP.Username,
 		cfg.SMTP.Password,
 		cfg.SMTP.From,
-		cfg.FrontendURL, // <--- ДОБАВЛЕНО ДЛЯ ЭТАПА 7
+		cfg.FrontendURL,
 	)
 
 	return &AuthHandler{
@@ -70,7 +70,7 @@ type UserResponse struct {
 	ID        string `json:"id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
-	CreatedAt int64  `json:"created_at"`
+	CreatedAt string `json:"created_at"` // ИСПРАВЛЕНО: было int64
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -172,16 +172,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ИСПРАВЛЕНО: ExpiresIn берется из конфига, CreatedAt конвертируется в ISO 8601
 	respondJSON(w, http.StatusCreated, AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()), // ИСПРАВЛЕНО: было 3600
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: user.CreatedAt,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
 		},
 	})
 }
@@ -230,16 +231,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ИСПРАВЛЕНО: ExpiresIn берется из конфига, CreatedAt конвертируется в ISO 8601
 	respondJSON(w, http.StatusOK, AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()), // ИСПРАВЛЕНО: было 3600
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: user.CreatedAt,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
 		},
 	})
 }
@@ -269,7 +271,7 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: user.CreatedAt,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
 		},
 	})
 }
