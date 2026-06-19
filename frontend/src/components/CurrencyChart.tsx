@@ -32,37 +32,58 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
       try {
         const response = await fetchChartData(baseCurrency, quoteCurrency);
 
-        // Если сервер вернул объект с полем data, берем его. 
-        // Если вернул сразу массив — берем его. Если что-то иное — пустой массив.
-        const rawPoints = Array.isArray(response) ? response : (response?.data || []);
+        let rawPoints: any[] = [];
+        if (Array.isArray(response)) {
+          rawPoints = response;
+        } else if (response && typeof response === "object") {
+          rawPoints = response.data || response.points || response.history || response.rates || [];
+        }
 
         if (rawPoints.length === 0) {
-          console.warn("Данные пусты или не в том формате");
+          console.warn("Данные графика пусты или пришел неизвестный формат ответа:", response);
+
           setData([]);
           return;
         }
+        const formattedData = rawPoints.map((p: any, i: number) => {
+          let extractedRate = 0;
+          if (p && typeof p === "object") {
+            const val = p.rate !== undefined ? p.rate : (p.value || p.price || 0);
+            extractedRate = Number(val) || 0;
+          } else {
+            extractedRate = Number(p) || 0;
+          }
 
-        const formattedData = rawPoints.map((p: any) => {
-          // Безопасное создание даты
-          const dateObj = p.date ? new Date(p.date) : new Date();
-          const displayDate = !isNaN(dateObj.getTime())
-            ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-            : "н/д";
+          let displayDate = "";
+          if (p && p.date) {
+            const dateObj = new Date(p.date);
+            displayDate = !isNaN(dateObj.getTime())
+              ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+              : "н/д";
+          } else {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            displayDate = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+          }
 
           return {
-            rate: Number(p.rate) || 0, // Принудительно число
+            rate: extractedRate,
             date: displayDate
           };
         });
 
-        setData(formattedData.slice(-days).reverse());
+        const sliced = formattedData.slice(0, days);
+        setData(sliced.reverse());
+
       } catch (err) {
-        console.error("Ошибка при загрузке графика:", err);
+        console.error("Ошибка при загрузке или обработке графика:", err);
         setData([]);
       }
     };
+    
     loadData();
   }, [baseCurrency, quoteCurrency, days]);
+
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };
