@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"strings"
 )
 
 type EmailService struct {
