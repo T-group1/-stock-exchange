@@ -37,6 +37,7 @@ func NewAuthHandler(queries db.Querier, cfg *config.Config) *AuthHandler {
 		cfg.SMTP.Username,
 		cfg.SMTP.Password,
 		cfg.SMTP.From,
+		cfg.FrontendURL, // <--- ДОБАВЛЕНО ДЛЯ ЭТАПА 7
 	)
 
 	return &AuthHandler{
@@ -138,12 +139,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	token := generateToken()
 	tokenExpiry := time.Now().Add(24 * time.Hour).Unix()
 
-	// Создаем пользователя - ИСПРАВЛЕНО: IsVerified теперь bool, а не pgtype.Bool
+	// Создаем пользователя
 	user, err := h.queries.CreateUser(r.Context(), db.CreateUserParams{
 		Email:                    req.Email,
 		Name:                     req.Name,
 		PasswordHash:             string(hashedPassword),
-		IsVerified:               false, // ИСПРАВЛЕНО: было pgtype.Bool{Bool: false, Valid: true}
+		IsVerified:               false,
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
