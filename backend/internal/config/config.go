@@ -12,8 +12,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Logger   LoggerConfig
-	SMTP     SMTPConfig
-	JWT      JWTConfig
+	JWT      JWTConfig // <-- ДОБАВЛЕНО
 }
 
 // ServerConfig конфигурация HTTP сервера
@@ -39,16 +38,7 @@ type LoggerConfig struct {
 	Level string
 }
 
-// SMTPConfig конфигурация для отправки email
-type SMTPConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	From     string
-}
-
-// JWTConfig конфигурация JWT токенов
+// JWTConfig конфигурация JWT <-- ДОБАВЛЕНО
 type JWTConfig struct {
 	Secret             string
 	AccessTokenExpiry  time.Duration
@@ -75,17 +65,10 @@ func Load() *Config {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
-		SMTP: SMTPConfig{
-			Host:     getEnv("SMTP_HOST", "smtp.gmail.com"),
-			Port:     getEnv("SMTP_PORT", "587"),
-			Username: getEnv("SMTP_USERNAME", ""),
-			Password: getEnv("SMTP_PASSWORD", ""),
-			From:     getEnv("SMTP_FROM", ""),
-		},
-		JWT: JWTConfig{
-			Secret:             getEnv("JWT_SECRET", "your-super-secret-key-change-in-production"),
-			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 3600*time.Second),  // 1 час
-			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 604800*time.Second), // 7 дней
+		JWT: JWTConfig{ // <-- ДОБАВЛЕНО
+			Secret:             getEnv("JWT_SECRET", "super-secret-key-change-me"),
+			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60),      // 15 минут в секундах
+			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60), // 7 дней в секундах
 		},
 	}
 }
