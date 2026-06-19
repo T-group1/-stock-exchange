@@ -48,7 +48,7 @@ export default function CurrencyConverter({
       setFavorites([...favorites, { id: Date.now(), from, to }]);
     }
   };
-
+  
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px", fontFamily: "sans-serif" }}>
       

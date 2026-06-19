@@ -27,13 +27,11 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  
   useEffect(() => {
     const loadData = async () => {
       try {
         const response = await fetchChartData(baseCurrency, quoteCurrency);
         
-    
         let rawPoints: any[] = [];
         if (Array.isArray(response)) {
           rawPoints = response;
@@ -69,14 +67,13 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
 
       } catch (err) {
         console.error("Ошибка при подготовке данных графика:", err);
+
         setData([]);
       }
     };
     
     loadData();
   }, [baseCurrency, quoteCurrency, days]);
-
-
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };

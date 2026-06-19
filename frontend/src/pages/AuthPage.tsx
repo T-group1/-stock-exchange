@@ -14,30 +14,67 @@ export default function AuthPage({ setUser }: any) {
     setError("");
 
     if (isLoginMode) {
-      try {
-        const response = await fetch('/auth/login', {
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      if (isLoginMode) {
+        // РЕАЛЬНЫЙ ЗАПРОС НА ЛОГИН
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          navigate("/profile"); 
-        } else {
-          setError("Неверный email или пароль");
+        if (!res.ok) {
+          throw new Error("Неверный email или пароль");
         }
-      } catch (err) {
-        console.error(err);
-        setError("Ошибка при подключении к серверу");
+
+        const savedUser = localStorage.getItem("pending_user");
+        const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+        const finalName = (parsedUser && parsedUser.email === email) 
+          ? parsedUser.name 
+          : (name || "Пользователь");
+        
+        setUser({ name: finalName, email });
+        navigate("/profile"); 
+
+      } else {
+        if (!name) {
+          setError("Пожалуйста, введите ваше имя для регистрации");
+          return;
+        }
+        if (password.length < 8) {
+          setError("Пароль должен быть не менее 8 символов");
+          return;
+        }
+
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        if (!res.ok) {
+          throw new Error("Ошибка регистрации. Возможно, такой email уже используется или сервер недоступен.");
+        }
+
+        const newUser = { name, email };
+        setUser(newUser);
+        localStorage.setItem("pending_user", JSON.stringify(newUser));
+        navigate("/verify-email", { state: { email } }); 
       }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
     } else {
       if (!name) {
         setError("Пожалуйста, введите ваше имя для регистрации");
         return;
       }
-
       if (password.length < 8) {
         setError("Пароль должен быть не менее 8 символов");
         return;

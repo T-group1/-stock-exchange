@@ -28,10 +28,12 @@ type Querier interface {
 	GetUnreadCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserByVerificationToken(ctx context.Context, arg GetUserByVerificationTokenParams) (User, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
+	VerifyUser(ctx context.Context, arg VerifyUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

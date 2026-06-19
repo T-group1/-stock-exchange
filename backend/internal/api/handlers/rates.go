@@ -132,7 +132,8 @@ func (h *RatesHandler) GetByPair(w http.ResponseWriter, r *http.Request) {
 	baseInfo, baseExists := rateMap[base]
 	quoteInfo, quoteExists := rateMap[quote]
 
-	if !baseExists || !quoteExists {
+	// Пропускаем проверку quoteExists, если запрашиваем рубли
+	if !baseExists || (!quoteExists && quote != "RUB") {
 		http.Error(w, fmt.Sprintf("Rates not found for pair: %s", pair), http.StatusNotFound)
 		return
 	}
@@ -313,6 +314,10 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	quoteCurr, _ := h.queries.GetCurrencyByCode(r.Context(), quote)
 	baseNominal := float64(baseCurr.Nominal)
 	quoteNominal := float64(quoteCurr.Nominal)
+
+	if quote == "RUB" {
+		quoteNominal = 1.0 // RUB не имеет записи в БД, ставим номинал 1
+	}
 
 	// ИСПРАВЛЕНО: проверки на ноль
 	if baseNominal == 0 || quoteNominal == 0 {
