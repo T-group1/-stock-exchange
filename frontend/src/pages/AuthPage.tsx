@@ -9,56 +9,38 @@ export default function AuthPage({ setUser }: any) {
   const [name, setName] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (isLoginMode) {
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          navigate("/profile"); 
-        } else {
-          setError("Неверный email или пароль");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Ошибка при подключении к серверу");
-      }
+      // Ищем данные пользователя в кэше
+      const savedUser = localStorage.getItem("pending_user");
+      const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+      
+      // Если email совпадает с тем, что в кэше, берем сохраненное имя, иначе "Пользователь"
+      const finalName = (parsedUser && parsedUser.email === email) 
+        ? parsedUser.name 
+        : (name || "Пользователь");
+      
+      setUser({ name: finalName, email });
+      navigate("/profile"); 
     } else {
+      // Логика регистрации
       if (!name) {
         setError("Пожалуйста, введите ваше имя для регистрации");
         return;
       }
-
       if (password.length < 8) {
         setError("Пароль должен быть не менее 8 символов");
         return;
       }
       
-      try {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name })
-        });
-
-        if (response.ok) {
-          navigate("/verify-email", { state: { email } }); 
-        } else {
-          setError("Ошибка регистрации. Возможно, такой email уже используется.");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Ошибка при подключении к серверу");
-      }
+      const newUser = { name, email };
+      setUser(newUser);
+      // Сохраняем имя при регистрации, чтобы потом восстановить при входе
+      localStorage.setItem("pending_user", JSON.stringify(newUser));
+      navigate("/verify-email", { state: { email } }); 
     }
   };
 
