@@ -30,16 +30,19 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
   useEffect(() => {
     const loadData = async () => {
       try {
-        const rawPoints = await fetchChartData(baseCurrency, quoteCurrency);
+        const response = await fetchChartData(baseCurrency, quoteCurrency);
 
-        // Если API вернуло ошибку или не массив - выходим
-        if (!Array.isArray(rawPoints)) {
-          console.warn("Данные не являются массивом:", rawPoints);
+        // Если сервер вернул объект с полем data, берем его. 
+        // Если вернул сразу массив — берем его. Если что-то иное — пустой массив.
+        const rawPoints = Array.isArray(response) ? response : (response?.data || []);
+
+        if (rawPoints.length === 0) {
+          console.warn("Данные пусты или не в том формате");
           setData([]);
           return;
         }
 
-        const formattedData = rawPoints.map((p) => {
+        const formattedData = rawPoints.map((p: any) => {
           // Безопасное создание даты
           const dateObj = p.date ? new Date(p.date) : new Date();
           const displayDate = !isNaN(dateObj.getTime())
