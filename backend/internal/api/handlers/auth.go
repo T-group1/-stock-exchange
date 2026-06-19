@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -80,6 +81,7 @@ type UserResponse struct {
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
+
 	if err := parseJSON(r, &req); err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -132,7 +134,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Пользователь не найден (pgx.ErrNoRows) — продолжаем регистрацию
-
 	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -153,6 +154,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
+
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to create user")
 		return
@@ -179,6 +181,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
+
 	if err := parseJSON(r, &req); err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -206,7 +209,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Получаем пользователя
 	user, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
-		respondError(w, http.StatusUnauthorized, "Invalid email or password")
+		// ИСПРАВЛЕНИЕ ЭТАПА 4: Различаем "пользователь не найден" и "ошибка БД"
+		if errors.Is(err, pgx.ErrNoRows) {
+			respondError(w, http.StatusUnauthorized, "Invalid email or password")
+		} else {
+			respondError(w, http.StatusInternalServerError, "Database error")
+		}
 		return
 	}
 
@@ -251,6 +259,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
+
 	if token == "" {
 		respondError(w, http.StatusBadRequest, "Verification token is required")
 		return
@@ -263,6 +272,7 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: currentTime, Valid: true},
 	})
+
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid or expired verification token")
 		return
@@ -297,9 +307,11 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 
 func generateToken() string {
 	bytes := make([]byte, 32)
+
 	if _, err := rand.Read(bytes); err != nil {
 		// Fallback на время если rand не работает
 		return hex.EncodeToString([]byte(time.Now().String()))
 	}
+
 	return hex.EncodeToString(bytes)
 }
