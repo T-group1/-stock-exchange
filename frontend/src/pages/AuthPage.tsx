@@ -13,14 +13,9 @@ export default function AuthPage({ setUser }: any) {
     e.preventDefault();
     setError("");
 
-    if (isLoginMode) {
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
     try {
       if (isLoginMode) {
-        // РЕАЛЬНЫЙ ЗАПРОС НА ЛОГИН
+        // --- ЛОГИКА ВХОДА ---
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -41,6 +36,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         navigate("/profile"); 
 
       } else {
+        // --- ЛОГИКА РЕГИСТРАЦИИ ---
         if (!name) {
           setError("Пожалуйста, введите ваше имя для регистрации");
           return;
@@ -66,36 +62,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         navigate("/verify-email", { state: { email } }); 
       }
     } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-    } else {
-      if (!name) {
-        setError("Пожалуйста, введите ваше имя для регистрации");
-        return;
-      }
-      if (password.length < 8) {
-        setError("Пароль должен быть не менее 8 символов");
-        return;
-      }
-      
-      try {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name })
-        });
-
-        if (response.ok) {
-          navigate("/verify-email", { state: { email } }); 
-        } else {
-          setError("Ошибка регистрации. Возможно, такой email уже используется.");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Ошибка при подключении к серверу");
-      }
+      console.error(err);
+      setError(err.message || "Ошибка при подключении к серверу");
     }
   };
 
