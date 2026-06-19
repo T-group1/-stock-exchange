@@ -69,15 +69,16 @@ func (s *Service) SyncRates(ctx context.Context, date time.Time) error {
 			return fmt.Errorf("failed to scan date: %w", err)
 		}
 
-		// Конвертируем rate в pgtype.Numeric
+		// Конвертируем rate в pgtype.Numeric через строку
 		pgRate := pgtype.Numeric{}
-		if err := pgRate.Scan(r.Rate); err != nil {
+		strRate := fmt.Sprintf("%f", r.Rate)
+		if err := pgRate.Scan(strRate); err != nil {
 			return fmt.Errorf("failed to scan rate: %w", err)
 		}
 
-		// Вычисляем change_percentage (пока 0, можно добавить позже)
+		// Вычисляем change_percentage (передаем "0" как строку)
 		changePct := pgtype.Numeric{}
-		if err := changePct.Scan(0.0); err != nil {
+		if err := changePct.Scan("0"); err != nil {
 			return fmt.Errorf("failed to scan change percentage: %w", err)
 		}
 
