@@ -12,6 +12,7 @@ export default function AuthPage({ setUser }: AuthPageProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isRegistrationSuccess, setIsRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,9 +67,12 @@ export default function AuthPage({ setUser }: AuthPageProps) {
         
         // ИСПРАВЛЕНО: Показываем сообщение о необходимости подтвердить email
         setSuccessMessage(data.message || "Пользователь успешно создан. Проверьте почту для подтверждения email.");
+        setIsRegistrationSuccess(true);
         
-        // НЕ устанавливаем пользователя и НЕ перенаправляем сразу
-        // Пользователь должен подтвердить email через ссылку в письме
+        // Очищаем форму
+        setName("");
+        setEmail("");
+        setPassword("");
       }
     } catch (err: any) {
       console.error(err);
@@ -76,6 +80,39 @@ export default function AuthPage({ setUser }: AuthPageProps) {
     }
   };
 
+  const handleGoToLogin = () => {
+    setIsLoginMode(true);
+    setIsRegistrationSuccess(false);
+    setSuccessMessage("");
+    setError("");
+  };
+
+  // Если регистрация успешна, показываем только сообщение
+  if (isRegistrationSuccess) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
+        <div style={{ background: "#fff", padding: "40px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", maxWidth: "450px", width: "100%", textAlign: "center" }}>
+          <div style={{ background: "#d1fae5", color: "#059669", padding: "20px", borderRadius: "8px", marginBottom: "24px" }}>
+            <svg style={{ width: "48px", height: "48px", margin: "0 auto 16px", display: "block" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 style={{ margin: "0 0 12px", fontSize: "20px" }}>Регистрация успешна!</h2>
+            <p style={{ margin: "0 0 8px", lineHeight: "1.5" }}>{successMessage}</p>
+            <p style={{ margin: "0", fontSize: "14px", opacity: "0.9" }}>После подтверждения email вы сможете войти в систему.</p>
+          </div>
+          
+          <button 
+            onClick={handleGoToLogin}
+            style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontSize: "16px", fontWeight: "600", cursor: "pointer" }}
+          >
+            Перейти к входу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Обычная форма авторизации/регистрации
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
       <div style={{ background: "#fff", padding: "40px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", maxWidth: "450px", width: "100%" }}>
@@ -86,21 +123,6 @@ export default function AuthPage({ setUser }: AuthPageProps) {
         {error && (
           <div style={{ background: "#fee2e2", color: "#dc2626", padding: "12px", borderRadius: "6px", marginBottom: "20px" }}>
             {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div style={{ background: "#d1fae5", color: "#059669", padding: "12px", borderRadius: "6px", marginBottom: "20px" }}>
-            {successMessage}
-            <p style={{ marginTop: "10px", fontSize: "14px" }}>
-              После подтверждения email вы сможете войти в систему.
-            </p>
-            <button 
-              onClick={() => setIsLoginMode(true)}
-              style={{ marginTop: "10px", padding: "8px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", width: "100%" }}
-            >
-              Перейти к входу
-            </button>
           </div>
         )}
 
@@ -162,6 +184,7 @@ export default function AuthPage({ setUser }: AuthPageProps) {
               setIsLoginMode(!isLoginMode);
               setError("");
               setSuccessMessage("");
+              setIsRegistrationSuccess(false);
             }}
             style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontWeight: "600" }}
           >
