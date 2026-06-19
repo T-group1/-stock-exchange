@@ -12,6 +12,8 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Logger   LoggerConfig
+	SMTP     SMTPConfig
+	JWT      JWTConfig
 }
 
 // ServerConfig конфигурация HTTP сервера
@@ -37,6 +39,22 @@ type LoggerConfig struct {
 	Level string
 }
 
+// SMTPConfig конфигурация для отправки email
+type SMTPConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	From     string
+}
+
+// JWTConfig конфигурация JWT токенов
+type JWTConfig struct {
+	Secret             string
+	AccessTokenExpiry  time.Duration
+	RefreshTokenExpiry time.Duration
+}
+
 // Load загружает конфигурацию из переменных окружения
 func Load() *Config {
 	return &Config{
@@ -57,11 +75,22 @@ func Load() *Config {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
+		SMTP: SMTPConfig{
+			Host:     getEnv("SMTP_HOST", "smtp.gmail.com"),
+			Port:     getEnv("SMTP_PORT", "587"),
+			Username: getEnv("SMTP_USERNAME", ""),
+			Password: getEnv("SMTP_PASSWORD", ""),
+			From:     getEnv("SMTP_FROM", ""),
+		},
+		JWT: JWTConfig{
+			Secret:             getEnv("JWT_SECRET", "your-super-secret-key-change-in-production"),
+			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 3600*time.Second),  // 1 час
+			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 604800*time.Second), // 7 дней
+		},
 	}
 }
 
 // DSN возвращает строку подключения к БД
-// ИСПРАВЛЕНО: используем net/url для корректного экранирования пароля
 func (c *DatabaseConfig) DSN() string {
 	u := &url.URL{
 		Scheme: "postgres",

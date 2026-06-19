@@ -6,6 +6,7 @@ import (
 
 	"T_Project/internal/api/handlers"
 	customMiddleware "T_Project/internal/api/middleware"
+	"T_Project/internal/config"
 	"T_Project/internal/db"
 
 	"github.com/go-chi/chi/v5"
@@ -13,7 +14,7 @@ import (
 )
 
 // Router настраивает и возвращает HTTP роутер
-func Router(queries db.Querier) http.Handler {
+func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
 
 	// Chi middleware
@@ -22,16 +23,21 @@ func Router(queries db.Querier) http.Handler {
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.Compress(5))
-	// ИСПРАВЛЕНО: 30 наносекунд → 30 секунд
 	r.Use(chiMiddleware.Timeout(30 * time.Second))
 
 	// Custom middleware
 	r.Use(customMiddleware.CORS)
 
 	// Создаём хендлеры
+	authHandler := handlers.NewAuthHandler(queries, cfg)
 	currenciesHandler := handlers.NewCurrenciesHandler(queries)
 	ratesHandler := handlers.NewRatesHandler(queries)
 	convertHandler := handlers.NewConvertHandler(queries)
+
+	// Auth endpoints (публичные)
+	r.Post("/auth/register", authHandler.Register)
+	r.Post("/auth/login", authHandler.Login)
+	r.Post("/auth/verify", authHandler.Verify)
 
 	// Публичные эндпоинты
 	r.Route("/currencies", func(r chi.Router) {
