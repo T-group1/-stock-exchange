@@ -96,6 +96,11 @@ SELECT id, email, name, password_hash, is_verified, verification_token, verifica
 WHERE verification_token = $1 AND verification_token_expires > $2
 `
 
+type GetUserByVerificationTokenParams struct {
+	VerificationToken        pgtype.Text `json:"verification_token"`
+	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
+}
+
 func (q *Queries) GetUserByVerificationToken(ctx context.Context, arg GetUserByVerificationTokenParams) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByVerificationToken, arg.VerificationToken, arg.VerificationTokenExpires)
 	var i User
@@ -122,8 +127,8 @@ RETURNING id, email, name, password_hash, is_verified, verification_token, verif
 `
 
 type VerifyUserParams struct {
-	VerificationToken        string `json:"verification_token"`
-	VerificationTokenExpires int64  `json:"verification_token_expires"`
+	VerificationToken        pgtype.Text `json:"verification_token"`
+	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
 }
 
 func (q *Queries) VerifyUser(ctx context.Context, arg VerifyUserParams) (User, error) {
@@ -140,9 +145,4 @@ func (q *Queries) VerifyUser(ctx context.Context, arg VerifyUserParams) (User, e
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-type GetUserByVerificationTokenParams struct {
-	VerificationToken        string `json:"verification_token"`
-	VerificationTokenExpires int64  `json:"verification_token_expires"`
 }

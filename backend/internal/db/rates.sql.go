@@ -15,9 +15,9 @@ const createRate = `-- name: CreateRate :one
 INSERT INTO currency_rates (currency_code, rate, rate_date, source, change_percentage)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (currency_code, rate_date) DO UPDATE SET
-    rate = EXCLUDED.rate,
-    source = EXCLUDED.source,
-    change_percentage = EXCLUDED.change_percentage
+  rate = EXCLUDED.rate,
+  source = EXCLUDED.source,
+  change_percentage = EXCLUDED.change_percentage
 RETURNING id, currency_code, rate, rate_date, source, change_percentage
 `
 
@@ -49,6 +49,27 @@ func (q *Queries) CreateRate(ctx context.Context, arg CreateRateParams) (Currenc
 	return i, err
 }
 
+const getLatestRateByCurrency = `-- name: GetLatestRateByCurrency :one
+SELECT id, currency_code, rate, rate_date, source, change_percentage FROM currency_rates
+WHERE currency_code = $1
+ORDER BY rate_date DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatestRateByCurrency(ctx context.Context, currencyCode string) (CurrencyRate, error) {
+	row := q.db.QueryRow(ctx, getLatestRateByCurrency, currencyCode)
+	var i CurrencyRate
+	err := row.Scan(
+		&i.ID,
+		&i.CurrencyCode,
+		&i.Rate,
+		&i.RateDate,
+		&i.Source,
+		&i.ChangePercentage,
+	)
+	return i, err
+}
+
 const getLatestRates = `-- name: GetLatestRates :many
 SELECT DISTINCT ON (currency_code) id, currency_code, rate, rate_date, source, change_percentage
 FROM currency_rates
@@ -61,7 +82,7 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CurrencyRate
+	items := []CurrencyRate{}
 	for rows.Next() {
 		var i CurrencyRate
 		if err := rows.Scan(
@@ -105,7 +126,7 @@ func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) 
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRateHistoryRow
+	items := []GetRateHistoryRow{}
 	for rows.Next() {
 		var i GetRateHistoryRow
 		if err := rows.Scan(&i.Rate, &i.RateDate); err != nil {
@@ -132,7 +153,7 @@ func (q *Queries) GetRatesByDate(ctx context.Context, rateDate pgtype.Date) ([]C
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CurrencyRate
+	items := []CurrencyRate{}
 	for rows.Next() {
 		var i CurrencyRate
 		if err := rows.Scan(

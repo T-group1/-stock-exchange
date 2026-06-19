@@ -11,15 +11,20 @@ import (
 )
 
 type Querier interface {
+	// Добавление валюты в избранное.
+	// ON CONFLICT DO NOTHING гарантирует, что при повторном вызове не будет ошибки 500.
+	AddFavorite(ctx context.Context, arg AddFavoriteParams) error
 	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (Currency, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	CreateRate(ctx context.Context, arg CreateRateParams) (CurrencyRate, error)
 	CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateSubscription(ctx context.Context, arg DeactivateSubscriptionParams) error
+	GetActiveSubscriptions(ctx context.Context) ([]Subscription, error)
 	GetActiveSubscriptionsForCurrency(ctx context.Context, currencyCode string) ([]Subscription, error)
 	GetCurrencies(ctx context.Context) ([]Currency, error)
 	GetCurrencyByCode(ctx context.Context, code string) (Currency, error)
+	GetLatestRateByCurrency(ctx context.Context, currencyCode string) (CurrencyRate, error)
 	GetLatestRates(ctx context.Context) ([]CurrencyRate, error)
 	GetNotificationSettings(ctx context.Context, userID pgtype.UUID) (NotificationSetting, error)
 	GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error)
@@ -29,9 +34,15 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetUserByVerificationToken(ctx context.Context, arg GetUserByVerificationTokenParams) (User, error)
+	// Получение только кодов (удобно, если в API нужно просто проверить, что валюта в избранном)
+	GetUserFavoriteCodes(ctx context.Context, userID pgtype.UUID) ([]string, error)
+	// Получение полного списка избранных валют с их названиями (для красивого JSON в API)
+	GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]Currency, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
+	// Удаление валюты из избранного
+	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
 	VerifyUser(ctx context.Context, arg VerifyUserParams) (User, error)
 }
