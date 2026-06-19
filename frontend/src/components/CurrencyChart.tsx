@@ -42,7 +42,7 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
           return;
         }
 
-        const formattedData = rawPoints.map((p) => {
+        const formattedData = rawPoints.map((p: any) => {
           // Безопасное создание даты
           const dateObj = p.date ? new Date(p.date) : new Date();
           const displayDate = !isNaN(dateObj.getTime())
