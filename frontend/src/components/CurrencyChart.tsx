@@ -18,7 +18,7 @@ interface Line {
 
 export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProps) {
   const [data, setData] = useState<any[]>([]);
-  const [days, setDays] = useState<number>(30); 
+  const [days, setDays] = useState<number>(30);
 
   const [lines, setLines] = useState<Line[]>([]);
   const [tool, setTool] = useState<"none" | "draw" | "move" | "rotate">("none");
@@ -27,38 +27,62 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-  const loadData = async () => {
-    try {
-      const rawPoints = await fetchChartData(baseCurrency, quoteCurrency);
-      if (!Array.isArray(rawPoints)) return;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const response = await fetchChartData(baseCurrency, quoteCurrency);
 
-      const chartPoints = rawPoints.slice(0, days);
+        let rawPoints: any[] = [];
+        if (Array.isArray(response)) {
+          rawPoints = response;
+        } else if (response && typeof response === "object") {
+          rawPoints = response.data || response.points || response.history || response.rates || [];
+        }
 
-      const formattedData = chartPoints.map((p, i) => {
-        const displayDate = p.date 
-          ? new Date(p.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-          : (() => {
-              const d = new Date();
-              d.setDate(d.getDate() - i);
-              return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-            })();
+        if (rawPoints.length === 0) {
+          console.warn("Данные графика пусты или пришел неизвестный формат ответа:", response);
+          setData([]);
+          return;
+        }
+        const formattedData = rawPoints.map((p: any, i: number) => {
+          let extractedRate = 0;
+          if (p && typeof p === "object") {
+            const val = p.rate !== undefined ? p.rate : (p.value || p.price || 0);
+            extractedRate = Number(val) || 0;
+          } else {
+            extractedRate = Number(p) || 0;
+          }
 
-        return {
-          rate: p.rate,
-          date: displayDate
-        };
-      });
+          let displayDate = "";
+          if (p && p.date) {
+            const dateObj = new Date(p.date);
+            displayDate = !isNaN(dateObj.getTime())
+              ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+              : "н/д";
+          } else {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            displayDate = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+          }
 
-      setData(formattedData.reverse());
-      
-    } catch (err) {
-      console.error("Ошибка при обработке данных для графика:", err);
-    }
-  };
-  loadData();
+          return {
+            rate: extractedRate,
+            date: displayDate
+          };
+        });
 
-}, [baseCurrency, quoteCurrency, days]);
+        const sliced = formattedData.slice(0, days);
+        setData(sliced.reverse());
+
+      } catch (err) {
+        console.error("Ошибка при загрузке или обработке графика:", err);
+        setData([]);
+      }
+    };
+    
+    loadData();
+  }, [baseCurrency, quoteCurrency, days]);
+
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };
@@ -75,9 +99,9 @@ useEffect(() => {
     const coords = getMouseCoords(e);
 
     if ((tool === "move" || tool === "rotate") && activeLineId !== null) {
-      setActiveLineId(null); 
-      setTool("none");       
-      return;        
+      setActiveLineId(null);
+      setTool("none");
+      return;
     }
 
     if (tool === "draw") {
@@ -98,7 +122,7 @@ useEffect(() => {
         };
         setLines([...lines, newLine]);
         setDrawingStart(null);
-        setTool("none"); 
+        setTool("none");
       }
     }
   };
@@ -140,20 +164,20 @@ useEffect(() => {
   }
 
   return (
-    <div 
-      ref={containerRef} 
-      style={{ 
-        background: "#f5f3ff", 
-        padding: "20px", 
-        borderRadius: "16px", 
-        border: "1px solid #ddd6fe", 
+    <div
+      ref={containerRef}
+      style={{
+        background: "#f5f3ff",
+        padding: "20px",
+        borderRadius: "16px",
+        border: "1px solid #ddd6fe",
         position: "relative",
-        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)" 
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)"
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
         <div style={{ display: "flex", gap: "5px", background: "#f1f5f9", padding: "3px", borderRadius: "6px" }}>
-          {( [ [7, "7 дней"], [30, "1 мес"], [90, "3 мес"] ] as const).map(([v, label]) => (
+          {([[7, "7 дней"], [30, "1 мес"], [90, "3 мес"]] as const).map(([v, label]) => (
             <button key={v} onClick={() => setDays(v)} style={{ padding: "4px 10px", border: "none", borderRadius: "4px", background: days === v ? "#fff" : "transparent", boxShadow: days === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none", cursor: "pointer", fontSize: "12px", fontWeight: days === v ? "bold" : "normal" }}>
               {label}
             </button>
@@ -172,7 +196,7 @@ useEffect(() => {
           </button>
           {lines.length > 0 && (
             <button onClick={() => { setLines([]); setActiveLineId(null); }} style={{ padding: "4px 10px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>
-               Очистить
+              Очистить
             </button>
           )}
         </div>
@@ -184,7 +208,7 @@ useEffect(() => {
         {tool === "rotate" && " Выберите линию ниже и двигайте мышь для вращения вокруг начальной точки"}
       </div>
 
-      <div 
+      <div
         onClick={handleChartClick}
         onMouseMove={handleMouseMove}
         style={{ position: "relative" }}
@@ -198,55 +222,55 @@ useEffect(() => {
             <Area type="monotone" dataKey="rate" stroke="#7c3aed" fillOpacity={1} fill="url(#colorRate)" />
             <defs>
               <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.1}/>
-                <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.1} />
+                <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
               </linearGradient>
             </defs>
           </AreaChart>
         </ResponsiveContainer>
 
-        <svg 
-          style={{ 
-            position: "absolute", 
-            top: 0, 
-            left: 0, 
-            width: "100%", 
-            height: "100%", 
-            pointerEvents: tool === "none" ? "none" : "auto" 
+        <svg
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: tool === "none" ? "none" : "auto"
           }}
         >
           {lines.map((line) => (
             <g key={line.id}>
-              <line 
-                x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} 
+              <line
+                x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
                 stroke="transparent" strokeWidth={15} style={{ cursor: "pointer" }}
                 onClick={(e) => { e.stopPropagation(); setActiveLineId(line.id); }}
               />
-              
-              <line 
-                x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} 
-                stroke={activeLineId === line.id ? "#ef4444" : "#06b6d4"} 
-                strokeWidth={activeLineId === line.id ? 3 : 2} 
+
+              <line
+                x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+                stroke={activeLineId === line.id ? "#ef4444" : "#06b6d4"}
+                strokeWidth={activeLineId === line.id ? 3 : 2}
                 strokeDasharray={activeLineId === line.id ? "4 4" : "none"}
               />
-              
-              <circle 
-                cx={line.x1} 
-                cy={line.y1} 
-                r={5} 
-                fill="#3b82f6" 
-                stroke="#fff" 
-                strokeWidth={1.5} 
+
+              <circle
+                cx={line.x1}
+                cy={line.y1}
+                r={5}
+                fill="#3b82f6"
+                stroke="#fff"
+                strokeWidth={1.5}
                 style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.2))" }}
               />
 
-              <circle 
-                cx={line.x2} 
-                cy={line.y2} 
-                r={5} 
-                fill="#3b82f6" 
-                stroke="#fff" 
-                strokeWidth={1.5} 
+              <circle
+                cx={line.x2}
+                cy={line.y2}
+                r={5}
+                fill="#3b82f6"
+                stroke="#fff"
+                strokeWidth={1.5}
                 style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.2))" }}
               />
             </g>

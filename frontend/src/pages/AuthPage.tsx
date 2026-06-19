@@ -9,13 +9,29 @@ export default function AuthPage({ setUser }: any) {
   const [name, setName] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (isLoginMode) {
-      setUser({ name: name || "Пользователь", email });
-      navigate("/profile"); 
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          navigate("/profile"); 
+        } else {
+          setError("Неверный email или пароль");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Ошибка при подключении к серверу");
+      }
     } else {
       if (!name) {
         setError("Пожалуйста, введите ваше имя для регистрации");
@@ -23,14 +39,26 @@ export default function AuthPage({ setUser }: any) {
       }
 
       if (password.length < 8) {
-      setError("Пароль должен быть не менее 8 символов");
-      return;
-    }
+        setError("Пароль должен быть не менее 8 символов");
+        return;
+      }
       
-      const newUser = { name, email };
-      setUser(newUser);
-      localStorage.setItem("pending_user", JSON.stringify(newUser));
-      navigate("/verify-email", { state: { email } }); 
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
+        });
+
+        if (response.ok) {
+          navigate("/verify-email", { state: { email } }); 
+        } else {
+          setError("Ошибка регистрации. Возможно, такой email уже используется.");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Ошибка при подключении к серверу");
+      }
     }
   };
 
