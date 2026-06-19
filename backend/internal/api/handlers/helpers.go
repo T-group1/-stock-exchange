@@ -77,7 +77,6 @@ func getRateMapByDate(ctx context.Context, queries db.Querier, date time.Time) (
 	}
 
 	rateMap := make(map[string]rateInfo, len(rates))
-
 	for _, rate := range rates {
 		rateFloat, err := rate.Rate.Float64Value()
 		if err != nil || !rateFloat.Valid {
@@ -161,16 +160,18 @@ func respondJSON(w http.ResponseWriter, code int, payload interface{}) {
 	respondWithJSON(w, code, payload)
 }
 
-// ErrorResponse структура для error responses
+// ErrorResponse структура для error responses (ИСПРАВЛЕНО: добавлено поле Code для соответствия OpenAPI)
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
+	Code    string `json:"code"`
 }
 
-// respondError отправляет error response в JSON формате
-func respondError(w http.ResponseWriter, code int, message string) {
-	respondWithJSON(w, code, ErrorResponse{
-		Error:   http.StatusText(code),
+// respondError отправляет error response в JSON формате (ИСПРАВЛЕНО: добавлен параметр code)
+func respondError(w http.ResponseWriter, httpCode int, errorCode string, message string) {
+	respondWithJSON(w, httpCode, ErrorResponse{
+		Error:   http.StatusText(httpCode),
 		Message: message,
+		Code:    errorCode,
 	})
 }

@@ -83,7 +83,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 
 	if err := parseJSON(r, &req); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid request body")
 		return
 	}
 
@@ -93,13 +93,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Проверка обязательных полей
 	if req.Email == "" || req.Password == "" || req.Name == "" {
-		respondError(w, http.StatusBadRequest, "Email, password and name are required")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Email, password and name are required")
 		return
 	}
 
 	// Валидация email через net/mail
 	if _, err := mail.ParseAddress(req.Email); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid email format")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid email format")
 		return
 	}
 
@@ -108,13 +108,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// Валидация длины name
 	if len(req.Name) < 1 || len(req.Name) > 100 {
-		respondError(w, http.StatusBadRequest, "Name must be between 1 and 100 characters")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Name must be between 1 and 100 characters")
 		return
 	}
 
 	// Валидация пароля
 	if len(req.Password) < 8 {
-		respondError(w, http.StatusBadRequest, "Password must be at least 8 characters")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Password must be at least 8 characters")
 		return
 	}
 
@@ -122,14 +122,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	_, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err == nil {
 		// Пользователь найден
-		respondError(w, http.StatusConflict, "User with this email already exists")
+		respondError(w, http.StatusConflict, "CONFLICT", "User with this email already exists")
 		return
 	}
 
 	// Проверяем тип ошибки
 	if !errors.Is(err, pgx.ErrNoRows) {
 		// Это не "пользователь не найден", а реальная ошибка БД
-		respondError(w, http.StatusInternalServerError, "Database error")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Database error")
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to hash password")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to hash password")
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to create user")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create user")
 		return
 	}
 
@@ -183,7 +183,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 
 	if err := parseJSON(r, &req); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid request body")
 		return
 	}
 
@@ -193,13 +193,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Проверка обязательных полей
 	if req.Email == "" || req.Password == "" {
-		respondError(w, http.StatusBadRequest, "Email and password are required")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Email and password are required")
 		return
 	}
 
 	// Валидация email через net/mail
 	if _, err := mail.ParseAddress(req.Email); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid email format")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid email format")
 		return
 	}
 
@@ -211,36 +211,36 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// ИСПРАВЛЕНИЕ ЭТАПА 4: Различаем "пользователь не найден" и "ошибка БД"
 		if errors.Is(err, pgx.ErrNoRows) {
-			respondError(w, http.StatusUnauthorized, "Invalid email or password")
+			respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid email or password")
 		} else {
-			respondError(w, http.StatusInternalServerError, "Database error")
+			respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Database error")
 		}
 		return
 	}
 
 	// Проверяем пароль
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		respondError(w, http.StatusUnauthorized, "Invalid email or password")
+		respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid email or password")
 		return
 	}
 
 	// ИСПРАВЛЕНИЕ ЭТАПА 6: Проверяем Valid перед обращением к Bool
 	// Проверяем, подтвержден ли email
 	if !user.IsVerified.Valid || !user.IsVerified.Bool {
-		respondError(w, http.StatusForbidden, "Please verify your email before logging in")
+		respondError(w, http.StatusForbidden, "FORBIDDEN", "Please verify your email before logging in")
 		return
 	}
 
 	// Генерируем токены (только для подтвержденных пользователей)
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate refresh token")
 		return
 	}
 
@@ -262,7 +262,7 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 
 	if token == "" {
-		respondError(w, http.StatusBadRequest, "Verification token is required")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Verification token is required")
 		return
 	}
 
@@ -275,20 +275,20 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid or expired verification token")
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid or expired verification token")
 		return
 	}
 
 	// После успешной верификации генерируем токены
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate refresh token")
 		return
 	}
 
