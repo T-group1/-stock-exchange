@@ -60,8 +60,7 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 
 	r.Route("/rates", func(r chi.Router) {
 		r.Get("/", ratesHandler.GetAll)
-		r.Get("/{pair}", ratesHandler.GetByPair)
-		r.Get("/{pair}/history", ratesHandler.GetHistory)
+		r.Get("/{pair}", ratesHandler.GetHistory) // ✅ ИСПРАВЛЕНО: GetHistory вместо GetByPair
 	})
 
 	r.Post("/convert", convertHandler.Convert)
