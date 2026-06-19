@@ -1,6 +1,6 @@
 -- name: CreateUser :one
-INSERT INTO users (email, name, password_hash, is_verified, verification_token, verification_token_expires)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO users (email, name, password_hash)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetUserByEmail :one
@@ -19,6 +19,7 @@ SET is_verified = true,
 WHERE verification_token = $1
   AND verification_token_expires > $2
 RETURNING *;
+
 -- name: UpdateVerificationToken :one
 UPDATE users
 SET verification_token = $1,

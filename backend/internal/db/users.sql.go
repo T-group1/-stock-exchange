@@ -21,7 +21,7 @@ type CreateUserParams struct {
 	Email                    string      `json:"email"`
 	Name                     string      `json:"name"`
 	PasswordHash             string      `json:"password_hash"`
-	IsVerified               pgtype.Bool `json:"is_verified"`
+	IsVerified               bool        `json:"is_verified"`
 	VerificationToken        pgtype.Text `json:"verification_token"`
 	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
 }
