@@ -138,12 +138,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	token := generateToken()
 	tokenExpiry := time.Now().Add(24 * time.Hour).Unix()
 
-	// Создаем пользователя
+	// Создаем пользователя - ИСПРАВЛЕНО: IsVerified теперь bool, а не pgtype.Bool
 	user, err := h.queries.CreateUser(r.Context(), db.CreateUserParams{
 		Email:                    req.Email,
 		Name:                     req.Name,
 		PasswordHash:             string(hashedPassword),
-		IsVerified:               pgtype.Bool{Bool: false, Valid: true},
+		IsVerified:               false, // ИСПРАВЛЕНО: было pgtype.Bool{Bool: false, Valid: true}
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
@@ -254,8 +254,8 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 
 	// Верифицируем пользователя
 	user, err := h.queries.VerifyUser(r.Context(), db.VerifyUserParams{
-		VerificationToken:        token,
-		VerificationTokenExpires: currentTime,
+		VerificationToken:        pgtype.Text{String: token, Valid: true},
+		VerificationTokenExpires: pgtype.Int8{Int64: currentTime, Valid: true},
 	})
 	if err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid or expired verification token")
