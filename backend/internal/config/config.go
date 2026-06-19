@@ -9,11 +9,12 @@ import (
 
 // Config содержит конфигурацию приложения
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Logger   LoggerConfig
-	JWT      JWTConfig
-	SMTP     SMTPConfig // <--- ДОБАВЛЕНО ДЛЯ ЭТАПА 4
+	Server      ServerConfig
+	Database    DatabaseConfig
+	Logger      LoggerConfig
+	JWT         JWTConfig
+	SMTP        SMTPConfig
+	FrontendURL string // <--- ДОБАВЛЕНО ДЛЯ ЭТАПА 7
 }
 
 // ServerConfig конфигурация HTTP сервера
@@ -77,16 +78,17 @@ func Load() *Config {
 		},
 		JWT: JWTConfig{
 			Secret:             getEnv("JWT_SECRET", "super-secret-key-change-me"),
-			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60*time.Second),       // ИСПРАВЛЕНО (было 900 наносекунд)
-			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60*time.Second), // ИСПРАВЛЕНО
+			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60*time.Second),
+			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60*time.Second),
 		},
-		SMTP: SMTPConfig{ // <--- ДОБАВЛЕНО
+		SMTP: SMTPConfig{
 			Host:     getEnv("SMTP_HOST", ""),
 			Port:     getEnv("SMTP_PORT", ""),
 			Username: getEnv("SMTP_USERNAME", ""),
 			Password: getEnv("SMTP_PASSWORD", ""),
 			From:     getEnv("SMTP_FROM", ""),
 		},
+		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"), // <--- ДОБАВЛЕНО
 	}
 }
 

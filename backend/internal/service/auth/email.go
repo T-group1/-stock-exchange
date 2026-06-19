@@ -4,58 +4,73 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"strconv"
 )
 
 type EmailService struct {
-	host     string
-	port     string
-	username string
-	password string
-	from     string
+	host        string
+	port        string
+	username    string
+	password    string
+	from        string
+	frontendURL string // <--- ДОБАВЛЕНО
 }
 
-func NewEmailService(host, port, username, password, from string) *EmailService {
+func NewEmailService(host, port, username, password, from, frontendURL string) *EmailService {
 	return &EmailService{
-		host:     host,
-		port:     port,
-		username: username,
-		password: password,
-		from:     from,
+		host:        host,
+		port:        port,
+		username:    username,
+		password:    password,
+		from:        from,
+		frontendURL: frontendURL,
 	}
 }
 
 func (s *EmailService) SendVerificationEmail(to, token string) error {
+	// Валидация порта если SMTP настроен
+	if s.username != "" && s.password != "" {
+		if s.port == "" {
+			return fmt.Errorf("SMTP port is not configured")
+		}
+		if _, err := strconv.Atoi(s.port); err != nil {
+			return fmt.Errorf("invalid SMTP port: %s", s.port)
+		}
+	}
+
+	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", s.frontendURL, token)
+
 	// Если SMTP не настроен, используем dev mode
 	if s.username == "" || s.password == "" {
 		log.Printf("[DEV MODE] Email to %s: Подтверждение регистрации", to)
-		log.Printf("[DEV MODE] Verification link: http://localhost:5173/verify-email?token=%s", token)
+		log.Printf("[DEV MODE] Verification link: %s", verifyURL)
 		return nil
 	}
 
 	subject := "Подтверждение регистрации на бирже валют"
 	body := fmt.Sprintf(`
-		<html>
-		<body style="font-family: Arial, sans-serif; padding: 20px;">
-			<h2>Добро пожаловать!</h2>
-			<p>Для подтверждения вашего email адреса, пожалуйста, перейдите по ссылке:</p>
-			<p>
-				<a href="http://localhost:5173/verify-email?token=%s" 
-				   style="background-color: #2563eb; color: white; padding: 10px 20px; 
-						  text-decoration: none; border-radius: 5px; display: inline-block;">
-					Подтвердить Email
-				</a>
-			</p>
-			<p>Или скопируйте эту ссылку в браузер:</p>
-			<p style="word-break: break-all;">http://localhost:5173/verify-email?token=%s</p>
-			<p>Ссылка действительна в течение 24 часов.</p>
-			<hr>
-			<p style="color: #666; font-size: 12px;">Если вы не регистрировались, просто проигнорируйте это письмо.</p>
-		</body>
-		</html>
-	`, token, token)
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Подтверждение регистрации</title>
+</head>
+<body>
+    <h2>Добро пожаловать!</h2>
+    <p>Для подтверждения вашего email адреса, пожалуйста, перейдите по ссылке:</p>
+    <a href="%s">Подтвердить Email</a>
+    <p>Или скопируйте эту ссылку в браузер:</p>
+    <p>%s</p>
+    <p>Ссылка действительна в течение 24 часов.</p>
+    <hr>
+    <p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
+</body>
+</html>
+`, verifyURL, verifyURL)
 
 	auth := smtp.PlainAuth("", s.username, s.password, s.host)
-	
+
+	// ИСПРАВЛЕНО: rn заменено на \r\n (стандарт SMTP)
 	msg := fmt.Sprintf("From: %s\r\n"+
 		"To: %s\r\n"+
 		"Subject: %s\r\n"+
@@ -66,7 +81,7 @@ func (s *EmailService) SendVerificationEmail(to, token string) error {
 
 	addr := s.host + ":" + s.port
 	err := smtp.SendMail(addr, auth, s.from, []string{to}, []byte(msg))
-	
+
 	if err != nil {
 		log.Printf("Failed to send email to %s: %v", to, err)
 		return err
