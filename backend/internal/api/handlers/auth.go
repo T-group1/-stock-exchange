@@ -184,10 +184,24 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ИСПРАВЛЕНИЕ ЭТАПА 3: Нормализация и валидация email (как в Register)
+	// Тримминг пробелов
+	req.Email = strings.TrimSpace(req.Email)
+
+	// Проверка обязательных полей
 	if req.Email == "" || req.Password == "" {
 		respondError(w, http.StatusBadRequest, "Email and password are required")
 		return
 	}
+
+	// Валидация email через net/mail
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid email format")
+		return
+	}
+
+	// Нормализация email в lowercase
+	req.Email = strings.ToLower(req.Email)
 
 	// Получаем пользователя
 	user, err := h.queries.GetUserByEmail(r.Context(), req.Email)
