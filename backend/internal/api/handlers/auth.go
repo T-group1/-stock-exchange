@@ -66,6 +66,11 @@ type AuthResponse struct {
 	User         UserResponse `json:"user"`
 }
 
+type RegisterResponse struct {
+	Message string       `json:"message"`
+	User    UserResponse `json:"user"`
+}
+
 type UserResponse struct {
 	ID        string `json:"id"`
 	Email     string `json:"email"`
@@ -144,7 +149,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email:                    req.Email,
 		Name:                     req.Name,
 		PasswordHash:             string(hashedPassword),
-		IsVerified:               pgtype.Bool{Bool: false, Valid: true}, // ИСПРАВЛЕНО ЭТАП 6: было false
+		IsVerified:               pgtype.Bool{Bool: false, Valid: true},
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
@@ -159,24 +164,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		// Пользователь может запросить повторную отправку позже
 	}
 
-	// Генерируем токены
-	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
-		return
-	}
-
-	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
-		return
-	}
-
-	respondJSON(w, http.StatusCreated, AuthResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
+	// ИСПРАВЛЕНО: НЕ генерируем токены до верификации email
+	// Возвращаем сообщение о необходимости подтвердить email
+	respondJSON(w, http.StatusCreated, RegisterResponse{
+		Message: "Пользователь успешно создан. Проверьте почту для подтверждения email.",
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
@@ -217,7 +208,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Генерируем токены
+	// Генерируем токены (только для подтвержденных пользователей)
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
@@ -263,9 +254,25 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"message": "Email successfully verified",
-		"user": UserResponse{
+	// После успешной верификации генерируем токены
+	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
+		return
+	}
+
+	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
+		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
