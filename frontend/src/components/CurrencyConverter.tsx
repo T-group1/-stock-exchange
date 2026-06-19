@@ -19,16 +19,24 @@ export default function CurrencyConverter({
 
   const currencies = ["USD", "RUB", "EUR", "CNY", "GBP", "JPY", "AUD", "CAD", "SGD", "CHF", "HKD"];
 
-  const fromRate = rates[from] || 1;
+
+  const fromRate = rates[from] || (rates.pair === `${from}_${to}` ? rates.rate : 1);
   const toRate = rates[to] || 1;
+
+  const currentPairRate = rates.pair === `${from}_${to}` && rates.rate
+    ? Number(rates.rate).toFixed(4)
+    : (fromRate / toRate).toFixed(4);
 
   const result = amount === "" 
     ? "0.00" 
     : from === to 
       ? Number(amount).toFixed(2) 
-      : ((Number(amount) * fromRate) / toRate).toFixed(2);
+      : rates.pair === `${from}_${to}` && rates.rate
+        ? (Number(amount) * Number(rates.rate)).toFixed(2)
+        : ((Number(amount) * fromRate) / toRate).toFixed(2);
 
-  const currentPairRate = (fromRate / toRate).toFixed(4);
+  console.log("Конвертер видит rates:", rates);
+  console.log("Финальный курс пары для рендера:", currentPairRate);
 
   const isFavorite = favorites?.some((f: any) => f.from === from && f.to === to) || false;
 
@@ -43,7 +51,7 @@ export default function CurrencyConverter({
       setFavorites([...favorites, { id: Date.now(), from, to }]);
     }
   };
-
+  
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px", fontFamily: "sans-serif" }}>
       

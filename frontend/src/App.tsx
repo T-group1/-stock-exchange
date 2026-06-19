@@ -18,16 +18,17 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [rates, setRates] = useState<Record<string, number>>({}); 
+  const [rates, setRates] = useState<any>({pair: "USD_RUB", rate: 73.3591 }); 
 
   useEffect(() => {
+    console.log(`=== НАЧАЛО ЗАПРОСА ДЛЯ ПАРЫ: ${from}_${to} ===`);
     fetchRates()
-      .then((data: Record<string, number>) => {
+      .then((data: any) => {
+        console.log("Данные, которые пришли в App.tsx из API:", data);
         setRates(data);
-        console.log("Курсы валют успешно загружены:", data);
       })
       .catch((err: any) => {
-        console.error("Ошибка при получении курсов:", err);
+        console.error("Ошибка при получении курсов", err);
       });
   }, []);
 

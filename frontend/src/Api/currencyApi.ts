@@ -16,7 +16,8 @@ export const mockChanges: Record<string, number> = {
   USD: 1.2, EUR: -0.8, CNY: 0.5, GBP: 0.9, JPY: -0.3, CAD: 1.5, AUD: -1.1, CHF: 0.4, HKD: 0.7, SGD: -0.6
 };
 
-export async function fetchRates(): Promise<Record<string, number>> {
+
+export async function fetchRates(): Promise<any> {
   try {
     const response = await fetch('/api/rates');
 
@@ -25,16 +26,32 @@ export async function fetchRates(): Promise<Record<string, number>> {
     }
 
     const responseData = await response.json();
-
     const ratesRecord: Record<string, number> = {};
+
+    if (responseData && responseData.rates && !Array.isArray(responseData.rates)) {
+      Object.keys(responseData.rates).forEach((code) => {
+        const item = responseData.rates[code];
+ 
+        const value = typeof item === 'object' && item !== null 
+          ? (item.rate || item.value || item.price) 
+          : item;
+
+        if (value) {
+          ratesRecord[code] = Number(value);
+        }
+      });
+      
+      if (!ratesRecord["RUB"]) ratesRecord["RUB"] = 1.0;
+      
+      return ratesRecord;
+    }
 
     if (responseData.rates && Array.isArray(responseData.rates)) {
       responseData.rates.forEach((item: any) => {
-
         const code = item.currency || item.code || item.id;
         const value = item.rate || item.value;
         if (code && value) {
-          ratesRecord[code] = value;
+          ratesRecord[code] = Number(value);
         }
       });
       return ratesRecord;
