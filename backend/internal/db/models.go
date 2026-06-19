@@ -15,12 +15,18 @@ type Currency struct {
 }
 
 type CurrencyRate struct {
-	ID               int64         `json:"id"`
-	CurrencyCode     string        `json:"currency_code"`
+	ID               int64          `json:"id"`
+	CurrencyCode     string         `json:"currency_code"`
 	Rate             pgtype.Numeric `json:"rate"`
-	RateDate         pgtype.Date   `json:"rate_date"`
-	Source           string        `json:"source"`
+	RateDate         pgtype.Date    `json:"rate_date"`
+	Source           string         `json:"source"`
 	ChangePercentage pgtype.Numeric `json:"change_percentage"`
+}
+
+type Favorite struct {
+	UserID       pgtype.UUID `json:"user_id"`
+	CurrencyCode string      `json:"currency_code"`
+	CreatedAt    int64       `json:"created_at"`
 }
 
 type Notification struct {
@@ -35,9 +41,9 @@ type Notification struct {
 }
 
 type NotificationSetting struct {
-	UserID         pgtype.UUID `json:"user_id"`
-	EmailEnabled   pgtype.Bool `json:"email_enabled"`
-	BrowserEnabled pgtype.Bool `json:"browser_enabled"`
+	UserID          pgtype.UUID `json:"user_id"`
+	EmailEnabled    pgtype.Bool `json:"email_enabled"`
+	BrowserEnabled  pgtype.Bool `json:"browser_enabled"`
 	QuietHoursStart pgtype.Text `json:"quiet_hours_start"`
 	QuietHoursEnd   pgtype.Text `json:"quiet_hours_end"`
 }
