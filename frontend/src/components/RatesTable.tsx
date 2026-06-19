@@ -26,15 +26,15 @@ export default function RatesTable({ rates }: Props) {
 
         <tbody>
           {Object.entries(rates || {})
-            .filter(([currency]) => currency !== "RUB") 
+            .filter(([currency]) => currency !== "RUB")
             .map(([currency, value]) => {
-              const rateToRub = rates["RUB"] ? rates["RUB"] / value : value;
+              const rateToRub = value;
               const change = mockChanges[currency] || "+0.1%";
               const isPositive = change.startsWith("+");
 
               return (
-                <tr 
-                  key={currency} 
+                <tr
+                  key={currency}
                   className="clickable-row"
                   onClick={() => navigate(`/currency/${currency}-RUB`)}
                 >
