@@ -36,10 +36,9 @@ type HistoryPoint struct {
 
 // HistoryResponse представляет ответ для истории курса пары
 type HistoryResponse struct {
-	Pair    string         `json:"pair"`
-	Base    string         `json:"base"`
-	Quote   string         `json:"quote"`
-	History []HistoryPoint `json:"history"`
+	Pair   string         `json:"pair"`
+	Period string         `json:"period"`
+	Data   []HistoryPoint `json:"data"`
 }
 
 // GetAll возвращает все последние курсы валют (ОПТИМИЗИРОВАНО: 1 запрос в БД)
@@ -232,10 +231,9 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 		respondWithJSON(w, http.StatusOK, HistoryResponse{
-			Pair:    pair,
-			Base:    base,
-			Quote:   quote,
-			History: history,
+			Pair:   pair,
+			Period: fmt.Sprintf("%dd", days),
+			Data:   history,
 		})
 		return
 	}
@@ -283,10 +281,9 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		}
 
 		respondWithJSON(w, http.StatusOK, HistoryResponse{
-			Pair:    pair,
-			Base:    base,
-			Quote:   quote,
-			History: history,
+			Pair:   pair,
+			Period: fmt.Sprintf("%dd", days),
+			Data:   history,
 		})
 		return
 	}
@@ -363,9 +360,8 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, HistoryResponse{
-		Pair:    pair,
-		Base:    base,
-		Quote:   quote,
-		History: history,
+		Pair:   pair,
+		Period: fmt.Sprintf("%dd", days),
+		Data:   history,
 	})
 }
