@@ -58,6 +58,13 @@ func (s *Service) SyncRates(ctx context.Context, date time.Time) error {
 			continue // RUB не сохраняем в таблицу currency_rates
 		}
 
+		// Гарантируем, что валюта существует в базе перед записью курса
+		_, _ = s.queries.CreateCurrency(ctx, db.CreateCurrencyParams{
+			Code:    r.CharCode,
+			Name:    r.Name,
+			Nominal: int32(r.Nominal),
+		})
+
 		// Конвертируем дату в pgtype.Date
 		parsedDate, err := time.Parse("2006-01-02", r.Date)
 		if err != nil {
