@@ -31,59 +31,49 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
     const loadData = async () => {
       try {
         const response = await fetchChartData(baseCurrency, quoteCurrency);
-
+        
         let rawPoints: any[] = [];
         if (Array.isArray(response)) {
           rawPoints = response;
         } else if (response && typeof response === "object") {
-          rawPoints = response.data || response.points || response.history || response.rates || [];
+          const keys = Object.keys(response);
+          const foundKey = keys.find(k => Array.isArray(response[k]));
+          rawPoints = foundKey ? response[foundKey] : (response.data || []);
         }
 
         if (rawPoints.length === 0) {
-          console.warn("Данные графика пусты или пришел неизвестный формат ответа:", response);
-
+          console.warn("Данные для графика отсутствуют или пустой массив");
           setData([]);
           return;
         }
+
         const formattedData = rawPoints.map((p: any, i: number) => {
-          let extractedRate = 0;
-          if (p && typeof p === "object") {
-            const val = p.rate !== undefined ? p.rate : (p.value || p.price || 0);
-            extractedRate = Number(val) || 0;
-          } else {
-            extractedRate = Number(p) || 0;
-          }
+          const val = typeof p === 'object' && p !== null 
+            ? (p.rate || p.value || p.price || 0) 
+            : p;
+            
+          const extractedRate = Number(val) || 0;
 
-          let displayDate = "";
-          if (p && p.date) {
-            const dateObj = new Date(p.date);
-            displayDate = !isNaN(dateObj.getTime())
+          const dateVal = p && p.date ? p.date : null;
+          const dateObj = dateVal ? new Date(dateVal) : null;
+          const displayDate = (dateObj && !isNaN(dateObj.getTime()))
               ? dateObj.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-              : "н/д";
-          } else {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            displayDate = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-          }
+              : `День ${i + 1}`;
 
-          return {
-            rate: extractedRate,
-            date: displayDate
-          };
+          return { rate: extractedRate, date: displayDate };
         });
 
-        const sliced = formattedData.slice(0, days);
-        setData(sliced.reverse());
+        setData(formattedData.slice(0, days).reverse());
 
       } catch (err) {
-        console.error("Ошибка при загрузке или обработке графика:", err);
+        console.error("Ошибка при подготовке данных графика:", err);
+
         setData([]);
       }
     };
     
     loadData();
   }, [baseCurrency, quoteCurrency, days]);
-
 
   const getMouseCoords = (e: React.MouseEvent) => {
     if (!containerRef.current) return { x: 0, y: 0 };

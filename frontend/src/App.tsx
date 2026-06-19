@@ -15,6 +15,7 @@ import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 export default function App() {
   const [from, setFrom] = useState("USD");
   const [to, setTo] = useState("RUB");
+
   const [user, setUser] = useState<any>(() => {
     const saved = localStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
