@@ -70,7 +70,7 @@ type UserResponse struct {
 	ID        string `json:"id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"` // ИСПРАВЛЕНО: было int64
+	CreatedAt string `json:"created_at"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +144,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Email:                    req.Email,
 		Name:                     req.Name,
 		PasswordHash:             string(hashedPassword),
-		IsVerified:               false,
+		IsVerified:               pgtype.Bool{Bool: false, Valid: true}, // ИСПРАВЛЕНО ЭТАП 6: было false
 		VerificationToken:        pgtype.Text{String: token, Valid: true},
 		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
@@ -172,17 +172,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ИСПРАВЛЕНО: ExpiresIn берется из конфига, CreatedAt конвертируется в ISO 8601
 	respondJSON(w, http.StatusCreated, AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()), // ИСПРАВЛЕНО: было 3600
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
 		},
 	})
 }
@@ -231,17 +230,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ИСПРАВЛЕНО: ExpiresIn берется из конфига, CreatedAt конвертируется в ISO 8601
 	respondJSON(w, http.StatusOK, AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()), // ИСПРАВЛЕНО: было 3600
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
 		},
 	})
 }
@@ -271,7 +269,7 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339), // ИСПРАВЛЕНО: было int64
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
 		},
 	})
 }
