@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"T_Project/internal/config"
@@ -81,17 +82,19 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Printf("ERROR hashing password: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
 
-	// Создаем пользователя (используем реальные поля из db.CreateUserParams)
+	// Создаем пользователя
 	user, err := h.queries.CreateUser(r.Context(), db.CreateUserParams{
 		Email:        req.Email,
 		Name:         req.Name,
 		PasswordHash: string(hashedPassword),
 	})
 	if err != nil {
+		log.Printf("ERROR creating user in DB: %v", err) // Логируем ошибку базы
 		respondError(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
@@ -99,12 +102,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Генерируем токены
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
+		log.Printf("ERROR generating access token: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
+		log.Printf("ERROR generating refresh token: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
@@ -138,12 +143,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Получаем пользователя
 	user, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
+		log.Printf("ERROR getting user by email (%s): %v", req.Email, err) // Логируем ошибку
 		respondError(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
 
 	// Проверяем пароль
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		log.Printf("ERROR invalid password for user (%s): %v", req.Email, err) // Логируем ошибку
 		respondError(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
@@ -151,12 +158,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Генерируем токены
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
+		log.Printf("ERROR generating access token for login: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
+		log.Printf("ERROR generating refresh token for login: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
