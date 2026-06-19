@@ -58,6 +58,13 @@ func (s *Service) SyncRates(ctx context.Context, date time.Time) error {
 			continue // RUB не сохраняем в таблицу currency_rates
 		}
 
+		// Гарантируем, что валюта существует в базе перед записью курса
+		_, _ = s.queries.CreateCurrency(ctx, db.CreateCurrencyParams{
+			Code:    r.CharCode,
+			Name:    r.Name,
+			Nominal: int32(r.Nominal),
+		})
+
 		// Конвертируем дату в pgtype.Date
 		parsedDate, err := time.Parse("2006-01-02", r.Date)
 		if err != nil {
@@ -69,15 +76,16 @@ func (s *Service) SyncRates(ctx context.Context, date time.Time) error {
 			return fmt.Errorf("failed to scan date: %w", err)
 		}
 
-		// Конвертируем rate в pgtype.Numeric
+		// Конвертируем rate в pgtype.Numeric через строку
 		pgRate := pgtype.Numeric{}
-		if err := pgRate.Scan(r.Rate); err != nil {
+		strRate := fmt.Sprintf("%f", r.Rate)
+		if err := pgRate.Scan(strRate); err != nil {
 			return fmt.Errorf("failed to scan rate: %w", err)
 		}
 
-		// Вычисляем change_percentage (пока 0, можно добавить позже)
+		// Вычисляем change_percentage (передаем "0" как строку)
 		changePct := pgtype.Numeric{}
-		if err := changePct.Scan(0.0); err != nil {
+		if err := changePct.Scan("0"); err != nil {
 			return fmt.Errorf("failed to scan change percentage: %w", err)
 		}
 
