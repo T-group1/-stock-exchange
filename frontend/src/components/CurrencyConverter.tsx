@@ -17,6 +17,7 @@ export default function CurrencyConverter({
   const [hoverFav, setHoverFav] = useState(false);
   const [amount, setAmount] = useState<number | "">(1); 
   const currencies = rates ? Object.keys(rates).filter(key => key !== 'date' && key !== 'pair' && key !== 'rate') : ["USD", "RUB"] 
+
   const fromRate = rates[from] || (rates.pair === `${from}_${to}` ? rates.rate : 1);
   const toRate = rates[to] || 1;
 
@@ -48,7 +49,7 @@ export default function CurrencyConverter({
       setFavorites([...favorites, { id: Date.now(), from, to }]);
     }
   };
-
+  
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px", fontFamily: "sans-serif" }}>
       

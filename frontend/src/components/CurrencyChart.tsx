@@ -41,6 +41,7 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
 
         if (rawPoints.length === 0) {
           console.warn("Данные графика пусты или пришел неизвестный формат ответа:", response);
+
           setData([]);
           return;
         }
