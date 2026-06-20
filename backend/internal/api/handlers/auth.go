@@ -1,19 +1,27 @@
 package handlers
 
 import (
-	"log"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"net/http"
+	"net/mail"
+	"strings"
+	"time"
 
 	"T_Project/internal/config"
 	"T_Project/internal/db"
 	"T_Project/internal/service/auth"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
-	queries    db.Querier
-	jwtService *auth.JWTService
+	queries      db.Querier
+	jwtService   *auth.JWTService
+	emailService *auth.EmailService
 }
 
 func NewAuthHandler(queries db.Querier, cfg *config.Config) *AuthHandler {
@@ -23,9 +31,19 @@ func NewAuthHandler(queries db.Querier, cfg *config.Config) *AuthHandler {
 		cfg.JWT.RefreshTokenExpiry,
 	)
 
+	emailService := auth.NewEmailService(
+		cfg.SMTP.Host,
+		cfg.SMTP.Port,
+		cfg.SMTP.Username,
+		cfg.SMTP.Password,
+		cfg.SMTP.From,
+		cfg.FrontendURL,
+	)
+
 	return &AuthHandler{
-		queries:    queries,
-		jwtService: jwtService,
+		queries:      queries,
+		jwtService:   jwtService,
+		emailService: emailService,
 	}
 }
 
@@ -52,7 +70,7 @@ type UserResponse struct {
 	ID        string `json:"id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
-	CreatedAt int64  `json:"created_at"`
+	CreatedAt string `json:"created_at"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -62,11 +80,32 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Тримминг пробелов
+	req.Email = strings.TrimSpace(req.Email)
+	req.Name = strings.TrimSpace(req.Name)
+
+	// Проверка обязательных полей
 	if req.Email == "" || req.Password == "" || req.Name == "" {
 		respondError(w, http.StatusBadRequest, "Email, password and name are required")
 		return
 	}
 
+	// Валидация email через net/mail
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid email format")
+		return
+	}
+
+	// Нормализация email в lowercase
+	req.Email = strings.ToLower(req.Email)
+
+	// Валидация длины name
+	if len(req.Name) < 1 || len(req.Name) > 100 {
+		respondError(w, http.StatusBadRequest, "Name must be between 1 and 100 characters")
+		return
+	}
+
+	// Валидация пароля
 	if len(req.Password) < 8 {
 		respondError(w, http.StatusBadRequest, "Password must be at least 8 characters")
 		return
@@ -75,41 +114,60 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Проверяем, существует ли пользователь
 	_, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err == nil {
+		// Пользователь найден
 		respondError(w, http.StatusConflict, "User with this email already exists")
 		return
 	}
 
+	// Проверяем тип ошибки
+	if !errors.Is(err, pgx.ErrNoRows) {
+		// Это не "пользователь не найден", а реальная ошибка БД
+		respondError(w, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	// Пользователь не найден (pgx.ErrNoRows) — продолжаем регистрацию
+
 	// Хешируем пароль
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("ERROR hashing password: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
 
+	// Генерируем токен верификации
+	token := generateToken()
+	tokenExpiry := time.Now().Add(24 * time.Hour).Unix()
+
 	// Создаем пользователя
 	user, err := h.queries.CreateUser(r.Context(), db.CreateUserParams{
-		Email:        req.Email,
-		Name:         req.Name,
-		PasswordHash: string(hashedPassword),
+		Email:                    req.Email,
+		Name:                     req.Name,
+		PasswordHash:             string(hashedPassword),
+		IsVerified:               pgtype.Bool{Bool: false, Valid: true}, // ИСПРАВЛЕНО ЭТАП 6: было false
+		VerificationToken:        pgtype.Text{String: token, Valid: true},
+		VerificationTokenExpires: pgtype.Int8{Int64: tokenExpiry, Valid: true},
 	})
 	if err != nil {
-		log.Printf("ERROR creating user in DB: %v", err) // Логируем ошибку базы
 		respondError(w, http.StatusInternalServerError, "Failed to create user")
 		return
+	}
+
+	// Отправляем email с верификацией
+	if err := h.emailService.SendVerificationEmail(req.Email, token); err != nil {
+		// Не прерываем регистрацию, если email не отправился
+		// Пользователь может запросить повторную отправку позже
 	}
 
 	// Генерируем токены
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
-		log.Printf("ERROR generating access token: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
-		log.Printf("ERROR generating refresh token: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
@@ -118,12 +176,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: user.CreatedAt,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
 		},
 	})
 }
@@ -143,29 +201,31 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Получаем пользователя
 	user, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
-		log.Printf("ERROR getting user by email (%s): %v", req.Email, err) // Логируем ошибку
 		respondError(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
 
 	// Проверяем пароль
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		log.Printf("ERROR invalid password for user (%s): %v", req.Email, err) // Логируем ошибку
 		respondError(w, http.StatusUnauthorized, "Invalid email or password")
+		return
+	}
+
+	// Проверяем, подтвержден ли email
+	if !user.IsVerified.Bool {
+		respondError(w, http.StatusForbidden, "Please verify your email before logging in")
 		return
 	}
 
 	// Генерируем токены
 	accessToken, err := h.jwtService.GenerateAccessToken(user.ID.String(), user.Email)
 	if err != nil {
-		log.Printf("ERROR generating access token for login: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
 	refreshToken, err := h.jwtService.GenerateRefreshToken(user.ID.String(), user.Email)
 	if err != nil {
-		log.Printf("ERROR generating refresh token for login: %v", err) // Логируем ошибку
 		respondError(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
@@ -174,12 +234,51 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+		ExpiresIn:    int64(h.jwtService.AccessExpiry().Seconds()),
 		User: UserResponse{
 			ID:        user.ID.String(),
 			Email:     user.Email,
 			Name:      user.Name,
-			CreatedAt: user.CreatedAt,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
 		},
 	})
+}
+
+func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		respondError(w, http.StatusBadRequest, "Verification token is required")
+		return
+	}
+
+	currentTime := time.Now().Unix()
+
+	// Верифицируем пользователя
+	user, err := h.queries.VerifyUser(r.Context(), db.VerifyUserParams{
+		VerificationToken:        pgtype.Text{String: token, Valid: true},
+		VerificationTokenExpires: pgtype.Int8{Int64: currentTime, Valid: true},
+	})
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid or expired verification token")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Email successfully verified",
+		"user": UserResponse{
+			ID:        user.ID.String(),
+			Email:     user.Email,
+			Name:      user.Name,
+			CreatedAt: time.Unix(user.CreatedAt, 0).UTC().Format(time.RFC3339),
+		},
+	})
+}
+
+func generateToken() string {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback на время если rand не работает
+		return hex.EncodeToString([]byte(time.Now().String()))
+	}
+	return hex.EncodeToString(bytes)
 }

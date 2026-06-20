@@ -50,7 +50,7 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	// Auth endpoints (публичные)
 	r.Post("/auth/register", authHandler.Register)
 	r.Post("/auth/login", authHandler.Login)
-	// r.Post("/auth/verify", authHandler.Verify)
+	r.Get("/auth/verify", authHandler.Verify) // ИСПРАВЛЕНО ЭТАП 11: GET для перехода по ссылке из письма
 
 	// Публичные эндпоинты
 	r.Route("/currencies", func(r chi.Router) {
