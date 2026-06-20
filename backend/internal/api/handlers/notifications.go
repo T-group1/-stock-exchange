@@ -37,7 +37,7 @@ type NotificationResponse struct {
 func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *NotificationsHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *NotificationsHandler) MarkAsRead(w http.ResponseWriter, r *http.Request
 func (h *NotificationsHandler) GetUnreadCount(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
