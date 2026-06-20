@@ -19,10 +19,9 @@ get:
     '401':
       $ref: ../components/responses/UnauthorizedError.yaml
   security:
-    - BearerAuth: []
+    - CookieAuth: []
   tags:
     - user
-
 post:
   operationId: addFavorite
   summary: Добавить валютную пару в избранное
@@ -46,6 +45,6 @@ post:
     '401':
       $ref: ../components/responses/UnauthorizedError.yaml
   security:
-    - BearerAuth: []
+    - CookieAuth: []
   tags:
     - user

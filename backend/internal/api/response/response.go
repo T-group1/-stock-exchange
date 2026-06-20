@@ -5,11 +5,10 @@ import (
 	"net/http"
 )
 
-// Error структура ошибки (ИСПРАВЛЕНО: унифицировано с Error.yaml - добавлено поле Error)
+// Error структура ошибки
 type Error struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
 	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // WriteJSON записывает JSON ответ
@@ -21,12 +20,11 @@ func WriteJSON(w http.ResponseWriter, status int, data interface{}) {
 	}
 }
 
-// WriteError записывает ошибку (ИСПРАВЛЕНО: добавлен параметр errorText)
-func WriteError(w http.ResponseWriter, status int, errorCode, errorText, message string) {
+// WriteError записывает ошибку
+func WriteError(w http.ResponseWriter, status int, code, message string) {
 	WriteJSON(w, status, Error{
-		Error:   errorText,
+		Code:    code,
 		Message: message,
-		Code:    errorCode,
 	})
 }
 
@@ -45,17 +43,17 @@ func WriteNoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// BadRequest ошибка 400 (ИСПРАВЛЕНО: добавлен errorText)
+// BadRequest ошибка 400
 func BadRequest(w http.ResponseWriter, message string) {
-	WriteError(w, http.StatusBadRequest, "BAD_REQUEST", http.StatusText(http.StatusBadRequest), message)
+	WriteError(w, http.StatusBadRequest, "BAD_REQUEST", message)
 }
 
-// NotFound ошибка 404 (ИСПРАВЛЕНО: добавлен errorText)
+// NotFound ошибка 404
 func NotFound(w http.ResponseWriter, message string) {
-	WriteError(w, http.StatusNotFound, "NOT_FOUND", http.StatusText(http.StatusNotFound), message)
+	WriteError(w, http.StatusNotFound, "NOT_FOUND", message)
 }
 
-// InternalError ошибка 500 (ИСПРАВЛЕНО: добавлен errorText)
+// InternalError ошибка 500
 func InternalError(w http.ResponseWriter, message string) {
-	WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", http.StatusText(http.StatusInternalServerError), message)
+	WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", message)
 }

@@ -33,8 +33,6 @@ paths:
     $ref: paths/subscriptions_id.yaml
   /notifications:
     $ref: paths/notifications.yaml
-  /notifications/unread-count:
-    $ref: paths/notifications_unread_count.yaml
   /notifications/{id}/read:
     $ref: paths/notifications_id_read.yaml
   /notifications/settings:
@@ -95,8 +93,6 @@ components:
   securitySchemes:
     CookieAuth:
       $ref: components/securitySchemes/CookieAuth.yaml
-    BearerAuth:
-      $ref: components/securitySchemes/BearerAuth.yaml
 tags:
   - name: auth
     description: Аутентификация и регистрация
@@ -113,4 +109,4 @@ tags:
   - name: user
     description: Пользовательские настройки и предпочтения
 security:
-  - BearerAuth: []
+  - CookieAuth: []

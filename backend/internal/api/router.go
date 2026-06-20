@@ -34,7 +34,6 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	currenciesHandler := handlers.NewCurrenciesHandler(queries)
 	ratesHandler := handlers.NewRatesHandler(queries)
 	convertHandler := handlers.NewConvertHandler(queries)
-	favoritesHandler := handlers.NewFavoritesHandler(queries)
 
 	// Создаём JWT сервис для auth middleware
 	jwtService := auth.NewJWTService(
@@ -51,8 +50,7 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	// Auth endpoints (публичные)
 	r.Post("/auth/register", authHandler.Register)
 	r.Post("/auth/login", authHandler.Login)
-	r.Get("/auth/verify", authHandler.Verify) // ИСПРАВЛЕНО ЭТАП 11: GET для перехода по ссылке из письма
-	r.Post("/auth/refresh", authHandler.Refresh)
+	// r.Post("/auth/verify", authHandler.Verify)
 
 	// Публичные эндпоинты
 	r.Route("/currencies", func(r chi.Router) {
@@ -62,7 +60,8 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 
 	r.Route("/rates", func(r chi.Router) {
 		r.Get("/", ratesHandler.GetAll)
-		r.Get("/{pair}", ratesHandler.GetHistory) // ✅ ИСПРАВЛЕНО: GetHistory вместо GetByPair
+		r.Get("/{pair}", ratesHandler.GetByPair)
+		r.Get("/{pair}/history", ratesHandler.GetHistory)
 	})
 
 	r.Post("/convert", convertHandler.Convert)
@@ -71,21 +70,9 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(customMiddleware.Auth(jwtService))
 
-		r.Route("/favorites", func(r chi.Router) {
-			r.Get("/", favoritesHandler.List)
-			r.Post("/", favoritesHandler.Add)
-			r.Delete("/{pair}", favoritesHandler.Remove)
-		})
-
-		// ИСПРАВЛЕНО ЭТАП 7: literal routes идут ПЕРЕД parameterized
 		r.Route("/notifications", func(r chi.Router) {
 			r.Get("/", notificationsHandler.List)
 			r.Get("/unread-count", notificationsHandler.GetUnreadCount)
-			r.Route("/settings", func(r chi.Router) {
-				r.Get("/", settingsHandler.Get)
-				r.Put("/", settingsHandler.Update)
-			})
-			// Parameterized route в конце
 			r.Post("/{id}/read", notificationsHandler.MarkAsRead)
 		})
 
@@ -93,6 +80,11 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 			r.Get("/", subscriptionsHandler.List)
 			r.Post("/", subscriptionsHandler.Create)
 			r.Delete("/{id}", subscriptionsHandler.Delete)
+		})
+
+		r.Route("/notifications/settings", func(r chi.Router) {
+			r.Get("/", settingsHandler.Get)
+			r.Put("/", settingsHandler.Update)
 		})
 	})
 

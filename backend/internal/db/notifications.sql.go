@@ -101,65 +101,10 @@ func (q *Queries) GetUserNotifications(ctx context.Context, arg GetUserNotificat
 	return items, nil
 }
 
-const getUserNotificationsCount = `-- name: GetUserNotificationsCount :one
-SELECT COUNT(*) FROM notifications
-WHERE user_id = $1
-`
-
-func (q *Queries) GetUserNotificationsCount(ctx context.Context, userID pgtype.UUID) (int64, error) {
-	row := q.db.QueryRow(ctx, getUserNotificationsCount, userID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const getUserNotificationsUnread = `-- name: GetUserNotificationsUnread :many
-SELECT id, user_id, subscription_id, type, title, message, is_read, created_at FROM notifications
-WHERE user_id = $1 AND is_read = false
-ORDER BY created_at DESC
-LIMIT $2 OFFSET $3
-`
-
-type GetUserNotificationsUnreadParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	Limit  int32       `json:"limit"`
-	Offset int32       `json:"offset"`
-}
-
-func (q *Queries) GetUserNotificationsUnread(ctx context.Context, arg GetUserNotificationsUnreadParams) ([]Notification, error) {
-	rows, err := q.db.Query(ctx, getUserNotificationsUnread, arg.UserID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Notification{}
-	for rows.Next() {
-		var i Notification
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.SubscriptionID,
-			&i.Type,
-			&i.Title,
-			&i.Message,
-			&i.IsRead,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const markNotificationAsRead = `-- name: MarkNotificationAsRead :one
+const markNotificationAsRead = `-- name: MarkNotificationAsRead :exec
 UPDATE notifications
 SET is_read = true
 WHERE id = $1 AND user_id = $2
-RETURNING id, user_id, subscription_id, type, title, message, is_read, created_at
 `
 
 type MarkNotificationAsReadParams struct {
@@ -167,18 +112,7 @@ type MarkNotificationAsReadParams struct {
 	UserID pgtype.UUID `json:"user_id"`
 }
 
-func (q *Queries) MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) (Notification, error) {
-	row := q.db.QueryRow(ctx, markNotificationAsRead, arg.ID, arg.UserID)
-	var i Notification
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.SubscriptionID,
-		&i.Type,
-		&i.Title,
-		&i.Message,
-		&i.IsRead,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error {
+	_, err := q.db.Exec(ctx, markNotificationAsRead, arg.ID, arg.UserID)
+	return err
 }

@@ -40,7 +40,7 @@ type UpdateSettingsRequest struct {
 func (h *NotificationSettingsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *NotificationSettingsHandler) Get(w http.ResponseWriter, r *http.Request
 func (h *NotificationSettingsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
 		return
 	}
 

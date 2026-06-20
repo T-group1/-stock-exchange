@@ -12,43 +12,43 @@ import (
 )
 
 const addFavorite = `-- name: AddFavorite :exec
-INSERT INTO favorites (user_id, currency_pair)
+INSERT INTO favorites (user_id, currency_code)
 VALUES ($1, $2)
-ON CONFLICT (user_id, currency_pair) DO NOTHING
+ON CONFLICT (user_id, currency_code) DO NOTHING
 `
 
 type AddFavoriteParams struct {
 	UserID       pgtype.UUID `json:"user_id"`
-	CurrencyPair string      `json:"currency_pair"`
+	CurrencyCode string      `json:"currency_code"`
 }
 
-// Добавление валютной пары в избранное.
+// Добавление валюты в избранное.
 // ON CONFLICT DO NOTHING гарантирует, что при повторном вызове не будет ошибки 500.
 func (q *Queries) AddFavorite(ctx context.Context, arg AddFavoriteParams) error {
-	_, err := q.db.Exec(ctx, addFavorite, arg.UserID, arg.CurrencyPair)
+	_, err := q.db.Exec(ctx, addFavorite, arg.UserID, arg.CurrencyCode)
 	return err
 }
 
-const getUserFavoritePairs = `-- name: GetUserFavoritePairs :many
-SELECT currency_pair
-FROM favorites
+const getUserFavoriteCodes = `-- name: GetUserFavoriteCodes :many
+SELECT currency_code 
+FROM favorites 
 WHERE user_id = $1
 `
 
-// Получение только валютных пар (удобно, если в API нужно просто проверить, что пара в избранном)
-func (q *Queries) GetUserFavoritePairs(ctx context.Context, userID pgtype.UUID) ([]string, error) {
-	rows, err := q.db.Query(ctx, getUserFavoritePairs, userID)
+// Получение только кодов (удобно, если в API нужно просто проверить, что валюта в избранном)
+func (q *Queries) GetUserFavoriteCodes(ctx context.Context, userID pgtype.UUID) ([]string, error) {
+	rows, err := q.db.Query(ctx, getUserFavoriteCodes, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	items := []string{}
 	for rows.Next() {
-		var currency_pair string
-		if err := rows.Scan(&currency_pair); err != nil {
+		var currency_code string
+		if err := rows.Scan(&currency_code); err != nil {
 			return nil, err
 		}
-		items = append(items, currency_pair)
+		items = append(items, currency_code)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -57,26 +57,27 @@ func (q *Queries) GetUserFavoritePairs(ctx context.Context, userID pgtype.UUID) 
 }
 
 const getUserFavorites = `-- name: GetUserFavorites :many
-SELECT currency_pair
-FROM favorites
-WHERE user_id = $1
-ORDER BY created_at DESC
+SELECT c.code, c.name, c.nominal
+FROM favorites f
+JOIN currencies c ON f.currency_code = c.code
+WHERE f.user_id = $1
+ORDER BY f.created_at DESC
 `
 
-// Получение полного списка избранных валютных пар
-func (q *Queries) GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]string, error) {
+// Получение полного списка избранных валют с их названиями (для красивого JSON в API)
+func (q *Queries) GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]Currency, error) {
 	rows, err := q.db.Query(ctx, getUserFavorites, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []Currency{}
 	for rows.Next() {
-		var currency_pair string
-		if err := rows.Scan(&currency_pair); err != nil {
+		var i Currency
+		if err := rows.Scan(&i.Code, &i.Name, &i.Nominal); err != nil {
 			return nil, err
 		}
-		items = append(items, currency_pair)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -86,16 +87,16 @@ func (q *Queries) GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]s
 
 const removeFavorite = `-- name: RemoveFavorite :exec
 DELETE FROM favorites
-WHERE user_id = $1 AND currency_pair = $2
+WHERE user_id = $1 AND currency_code = $2
 `
 
 type RemoveFavoriteParams struct {
 	UserID       pgtype.UUID `json:"user_id"`
-	CurrencyPair string      `json:"currency_pair"`
+	CurrencyCode string      `json:"currency_code"`
 }
 
-// Удаление валютной пары из избранного
+// Удаление валюты из избранного
 func (q *Queries) RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error {
-	_, err := q.db.Exec(ctx, removeFavorite, arg.UserID, arg.CurrencyPair)
+	_, err := q.db.Exec(ctx, removeFavorite, arg.UserID, arg.CurrencyCode)
 	return err
 }

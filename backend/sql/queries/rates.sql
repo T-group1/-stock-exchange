@@ -13,7 +13,7 @@ FROM currency_rates
 ORDER BY currency_code, rate_date DESC;
 
 -- name: GetRateHistory :many
-SELECT rate, rate_date, source, change_percentage
+SELECT rate, rate_date
 FROM currency_rates
 WHERE currency_code = $1 AND rate_date >= $2
 ORDER BY rate_date ASC;

@@ -13,7 +13,6 @@ import (
 	"T_Project/internal/config"
 	"T_Project/internal/db"
 	"T_Project/internal/parser/cbr"
-	"T_Project/internal/service/auth"
 	"T_Project/internal/service/rates"
 	"T_Project/internal/worker"
 
@@ -52,18 +51,8 @@ func main() {
 	ratesWorker.Start(workerCtx)
 	log.Println("Rates worker started (interval: 1h)")
 
-	// ИСПРАВЛЕНИЕ: Создаём emailService для воркера алертов
-	emailService := auth.NewEmailService(
-		cfg.SMTP.Host,
-		cfg.SMTP.Port,
-		cfg.SMTP.Username,
-		cfg.SMTP.Password,
-		cfg.SMTP.From,
-		cfg.FrontendURL,
-	)
-
 	// Запускаем воркер алертов (проверяет каждые 30 секунд)
-	alertsWorker := worker.NewAlertsWorker(queries, emailService, 30*time.Second)
+	alertsWorker := worker.NewAlertsWorker(queries, 30*time.Second)
 	go alertsWorker.Start(workerCtx)
 	log.Println("Alerts worker started (interval: 30s)")
 

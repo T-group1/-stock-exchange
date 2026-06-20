@@ -9,12 +9,10 @@ import (
 
 // Config содержит конфигурацию приложения
 type Config struct {
-	Server      ServerConfig
-	Database    DatabaseConfig
-	Logger      LoggerConfig
-	JWT         JWTConfig
-	SMTP        SMTPConfig
-	FrontendURL string // <--- ДОБАВЛЕНО ДЛЯ ЭТАПА 7
+	Server   ServerConfig
+	Database DatabaseConfig
+	Logger   LoggerConfig
+	JWT      JWTConfig // <-- ДОБАВЛЕНО
 }
 
 // ServerConfig конфигурация HTTP сервера
@@ -40,20 +38,11 @@ type LoggerConfig struct {
 	Level string
 }
 
-// JWTConfig конфигурация JWT
+// JWTConfig конфигурация JWT <-- ДОБАВЛЕНО
 type JWTConfig struct {
 	Secret             string
 	AccessTokenExpiry  time.Duration
 	RefreshTokenExpiry time.Duration
-}
-
-// SMTPConfig конфигурация почты
-type SMTPConfig struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	From     string
 }
 
 // Load загружает конфигурацию из переменных окружения
@@ -76,19 +65,11 @@ func Load() *Config {
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
 		},
-		JWT: JWTConfig{
+		JWT: JWTConfig{ // <-- ДОБАВЛЕНО
 			Secret:             getEnv("JWT_SECRET", "super-secret-key-change-me"),
-			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60*time.Second),
-			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60*time.Second),
+			AccessTokenExpiry:  getDurationEnv("JWT_ACCESS_EXPIRY", 15*60),      // 15 минут в секундах
+			RefreshTokenExpiry: getDurationEnv("JWT_REFRESH_EXPIRY", 7*24*60*60), // 7 дней в секундах
 		},
-		SMTP: SMTPConfig{
-			Host:     getEnv("SMTP_HOST", ""),
-			Port:     getEnv("SMTP_PORT", ""),
-			Username: getEnv("SMTP_USERNAME", ""),
-			Password: getEnv("SMTP_PASSWORD", ""),
-			From:     getEnv("SMTP_FROM", ""),
-		},
-		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"), // <--- ДОБАВЛЕНО
 	}
 }
 
@@ -100,11 +81,9 @@ func (c *DatabaseConfig) DSN() string {
 		Host:   c.Host + ":" + c.Port,
 		Path:   c.DBName,
 	}
-
 	q := u.Query()
 	q.Set("sslmode", c.SSLMode)
 	u.RawQuery = q.Encode()
-
 	return u.String()
 }
 

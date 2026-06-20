@@ -1,24 +1,25 @@
 -- name: AddFavorite :exec
--- Добавление валютной пары в избранное.
+-- Добавление валюты в избранное. 
 -- ON CONFLICT DO NOTHING гарантирует, что при повторном вызове не будет ошибки 500.
-INSERT INTO favorites (user_id, currency_pair)
+INSERT INTO favorites (user_id, currency_code)
 VALUES ($1, $2)
-ON CONFLICT (user_id, currency_pair) DO NOTHING;
+ON CONFLICT (user_id, currency_code) DO NOTHING;
 
 -- name: RemoveFavorite :exec
--- Удаление валютной пары из избранного
+-- Удаление валюты из избранного
 DELETE FROM favorites
-WHERE user_id = $1 AND currency_pair = $2;
+WHERE user_id = $1 AND currency_code = $2;
 
 -- name: GetUserFavorites :many
--- Получение полного списка избранных валютных пар
-SELECT currency_pair
-FROM favorites
-WHERE user_id = $1
-ORDER BY created_at DESC;
+-- Получение полного списка избранных валют с их названиями (для красивого JSON в API)
+SELECT c.code, c.name, c.nominal
+FROM favorites f
+JOIN currencies c ON f.currency_code = c.code
+WHERE f.user_id = $1
+ORDER BY f.created_at DESC;
 
--- name: GetUserFavoritePairs :many
--- Получение только валютных пар (удобно, если в API нужно просто проверить, что пара в избранном)
-SELECT currency_pair
-FROM favorites
+-- name: GetUserFavoriteCodes :many
+-- Получение только кодов (удобно, если в API нужно просто проверить, что валюта в избранном)
+SELECT currency_code 
+FROM favorites 
 WHERE user_id = $1;

@@ -1,22 +1,17 @@
 type: object
 properties:
-  currency_code:
+  currency_pair:
     type: string
-    description: Код валюты (например, USD, EUR, CAD)
-    example: USD
-    pattern: '^[A-Z]{3}$'
+    example: USD/RUB
   rate_value:
     type: number
     format: double
-    description: Значение курса для срабатывания уведомления
-    example: 75.50
   condition:
     type: string
     enum:
       - above
       - below
-    description: Условие срабатывания (выше или ниже указанного значения)
 required:
-  - currency_code
+  - currency_pair
   - rate_value
   - condition

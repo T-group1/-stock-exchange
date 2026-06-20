@@ -21,16 +21,6 @@ func NewJWTService(secret string, accessExpiry, refreshExpiry time.Duration) *JW
 	}
 }
 
-// AccessExpiry возвращает время жизни access токена
-func (s *JWTService) AccessExpiry() time.Duration {
-	return s.accessExpiry
-}
-
-// RefreshExpiry возвращает время жизни refresh токена
-func (s *JWTService) RefreshExpiry() time.Duration {
-	return s.refreshExpiry
-}
-
 func (s *JWTService) GenerateAccessToken(userID, email string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   userID,

@@ -1,10 +1,7 @@
 package handlers
 
 import (
-	"fmt"
-	"log"
 	"net/http"
-	"time"
 
 	"T_Project/internal/api/middleware"
 	"T_Project/internal/api/response"
@@ -31,22 +28,22 @@ type SubscriptionResponse struct {
 	RateValue    float64 `json:"rate_value"`
 	Condition    string  `json:"condition"`
 	IsActive     bool    `json:"is_active"`
-	CreatedAt    string  `json:"created_at"`
-	TriggeredAt  *string `json:"triggered_at,omitempty"`
+	CreatedAt    int64   `json:"created_at"`
+	TriggeredAt  *int64  `json:"triggered_at,omitempty"`
 }
 
 // CreateSubscriptionRequest запрос на создание подписки
 type CreateSubscriptionRequest struct {
 	CurrencyCode string  `json:"currency_code"`
 	RateValue    float64 `json:"rate_value"`
-	Condition    string  `json:"condition"`
+	Condition    string  `json:"condition"` // "above" или "below"
 }
 
 // List возвращает список подписок текущего пользователя
 func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
 		return
 	}
 
@@ -58,7 +55,6 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	subscriptions, err := h.queries.GetUserSubscriptions(r.Context(), userID)
 	if err != nil {
-		log.Printf("Failed to fetch subscriptions: %v", err)
 		response.InternalError(w, "Failed to fetch subscriptions")
 		return
 	}
@@ -67,20 +63,17 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	for _, s := range subscriptions {
 		rateFloat, _ := s.RateValue.Float64Value()
 
-		createdAt := time.Unix(s.CreatedAt, 0).UTC().Format(time.RFC3339)
-
 		resp := SubscriptionResponse{
 			ID:           s.ID.String(),
 			CurrencyCode: s.CurrencyCode,
 			RateValue:    rateFloat.Float64,
 			Condition:    s.Condition,
 			IsActive:     s.IsActive.Bool,
-			CreatedAt:    createdAt,
+			CreatedAt:    s.CreatedAt,
 		}
 
 		if s.TriggeredAt.Valid {
-			triggeredAt := time.Unix(s.TriggeredAt.Int64, 0).UTC().Format(time.RFC3339)
-			resp.TriggeredAt = &triggeredAt
+			resp.TriggeredAt = &s.TriggeredAt.Int64
 		}
 
 		result = append(result, resp)
@@ -95,7 +88,7 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
 		return
 	}
 
@@ -116,12 +109,10 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "Currency code is required")
 		return
 	}
-
 	if req.RateValue <= 0 {
 		response.BadRequest(w, "Rate value must be greater than 0")
 		return
 	}
-
 	if req.Condition != "above" && req.Condition != "below" {
 		response.BadRequest(w, "Condition must be 'above' or 'below'")
 		return
@@ -130,16 +121,13 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Проверяем что валюта существует
 	_, err := h.queries.GetCurrencyByCode(r.Context(), req.CurrencyCode)
 	if err != nil {
-		log.Printf("Currency %s not found: %v", req.CurrencyCode, err)
 		response.NotFound(w, "Currency not found")
 		return
 	}
 
-	// ИСПРАВЛЕНО: конвертируем float64 в string перед Scan
+	// Конвертируем float64 в pgtype.Numeric
 	rateValue := pgtype.Numeric{}
-	rateStr := fmt.Sprintf("%.2f", req.RateValue)
-	if err := rateValue.Scan(rateStr); err != nil {
-		log.Printf("Failed to scan rate value %s: %v", rateStr, err)
+	if err := rateValue.Scan(req.RateValue); err != nil {
 		response.InternalError(w, "Failed to process rate value")
 		return
 	}
@@ -151,14 +139,11 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Condition:    req.Condition,
 	})
 	if err != nil {
-		log.Printf("Failed to create subscription: %v", err)
 		response.InternalError(w, "Failed to create subscription")
 		return
 	}
 
 	rateFloat, _ := subscription.RateValue.Float64Value()
-
-	createdAt := time.Unix(subscription.CreatedAt, 0).UTC().Format(time.RFC3339)
 
 	response.WriteCreated(w, SubscriptionResponse{
 		ID:           subscription.ID.String(),
@@ -166,7 +151,7 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		RateValue:    rateFloat.Float64,
 		Condition:    subscription.Condition,
 		IsActive:     subscription.IsActive.Bool,
-		CreatedAt:    createdAt,
+		CreatedAt:    subscription.CreatedAt,
 	})
 }
 
@@ -174,7 +159,7 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
 		return
 	}
 
@@ -199,7 +184,7 @@ func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subscription.UserID != userID {
-		response.WriteError(w, http.StatusForbidden, "FORBIDDEN", http.StatusText(http.StatusForbidden), "You don't have permission to delete this subscription")
+		response.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You don't have permission to delete this subscription")
 		return
 	}
 
@@ -209,7 +194,6 @@ func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		TriggeredAt: pgtype.Int8{Valid: false},
 	})
 	if err != nil {
-		log.Printf("Failed to delete subscription: %v", err)
 		response.InternalError(w, "Failed to delete subscription")
 		return
 	}

@@ -15,70 +15,12 @@ post:
         application/json:
           schema:
             $ref: ../components/schemas/AuthResponse.yaml
-    '400':
-      description: Ошибка валидации (неверный формат запроса, пустые поля, невалидный email)
-      content:
-        application/json:
-          schema:
-            $ref: ../components/schemas/Error.yaml
-          examples:
-            invalidBody:
-              summary: Неверный формат тела запроса
-              value:
-                error: Bad Request
-                message: Invalid request body
-                code: BAD_REQUEST
-            emptyFields:
-              summary: Пустые обязательные поля
-              value:
-                error: Bad Request
-                message: Email and password are required
-                code: BAD_REQUEST
-            invalidEmail:
-              summary: Неверный формат email
-              value:
-                error: Bad Request
-                message: Invalid email format
-                code: BAD_REQUEST
     '401':
       description: Неверный email или пароль
       content:
         application/json:
           schema:
             $ref: ../components/schemas/Error.yaml
-          example:
-            error: Unauthorized
-            message: Invalid email or password
-            code: UNAUTHORIZED
-    '403':
-      description: Email не подтвержден
-      content:
-        application/json:
-          schema:
-            $ref: ../components/schemas/Error.yaml
-          example:
-            error: Forbidden
-            message: Please verify your email before logging in
-            code: FORBIDDEN
-    '500':
-      description: Внутренняя ошибка сервера (ошибка генерации токенов, проблема с БД)
-      content:
-        application/json:
-          schema:
-            $ref: ../components/schemas/Error.yaml
-          examples:
-            tokenGeneration:
-              summary: Ошибка генерации токена
-              value:
-                error: Internal Server Error
-                message: Failed to generate access token
-                code: INTERNAL_ERROR
-            databaseError:
-              summary: Ошибка базы данных
-              value:
-                error: Internal Server Error
-                message: Database error
-                code: INTERNAL_ERROR
   security: []
   tags:
     - auth

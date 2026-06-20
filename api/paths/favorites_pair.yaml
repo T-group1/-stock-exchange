@@ -3,14 +3,14 @@ delete:
   operationId: removeFavorite
   summary: Удалить пару из избранного
   security:
-    - BearerAuth: []
+    - CookieAuth: []
   parameters:
     - name: pair
       in: path
       required: true
       schema:
         type: string
-        example: USD_RUB
+      example: USD_RUB
   responses:
     "204":
       description: Пара удалена из избранного

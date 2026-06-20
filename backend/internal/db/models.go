@@ -25,7 +25,7 @@ type CurrencyRate struct {
 
 type Favorite struct {
 	UserID       pgtype.UUID `json:"user_id"`
-	CurrencyPair string      `json:"currency_pair"`
+	CurrencyCode string      `json:"currency_code"`
 	CreatedAt    int64       `json:"created_at"`
 }
 
