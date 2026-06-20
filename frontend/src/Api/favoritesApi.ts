@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:8080";
+// Используем относительный URL для production или localhost для разработки
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export interface FavoritePair {
   from: string;
@@ -11,7 +12,6 @@ export interface FavoritesResponse {
 
 // Получить токен из localStorage
 const getToken = (): string | null => {
-  // ИСПРАВЛЕНО: Получаем токен напрямую из localStorage, а не из userData
   return localStorage.getItem("access_token");
 };
 
