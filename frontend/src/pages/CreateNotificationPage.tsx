@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function CreateNotificationPage({ 
   user, 
   notifications, 
-  setNotifications,
-  rates 
+  setNotifications
 }: any) {
   const navigate = useNavigate();
   const [from, setFrom] = useState("USD");
@@ -43,15 +42,12 @@ export default function CreateNotificationPage({
     setError("");
 
     try {
-      // ИСПРАВЛЕНО: Отправляем уведомление на бэкенд
       const token = localStorage.getItem("token");
       
-      // Бэкенд ожидает currency_code (например, "USD"), а не пару "USD/RUB"
-      // Используем 'from' как код валюты для отслеживания
       const subscriptionData = {
-        currency_code: from, // USD, EUR и т.д.
+        currency_code: from,
         rate_value: Number(value),
-        condition: condition // "above" или "below"
+        condition: condition
       };
 
       const response = await fetch("http://localhost:8080/subscriptions", {
@@ -70,7 +66,6 @@ export default function CreateNotificationPage({
 
       const newSubscription = await response.json();
       
-      // Добавляем в локальное состояние для отображения
       const newNotification = {
         id: newSubscription.id || Date.now(),
         from,
