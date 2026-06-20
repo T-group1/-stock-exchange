@@ -37,8 +37,12 @@ export default function AuthPage({ setUser }: AuthPageProps) {
         const data = await res.json();
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // ИСПРАВЛЕНО: сохраняем токен под обоими ключами для совместимости
         localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("token", data.access_token);
         localStorage.setItem("refresh_token", data.refresh_token);
+        
         navigate("/");
       } else {
         // --- ЛОГИКА РЕГИСТРАЦИИ ---
@@ -64,12 +68,10 @@ export default function AuthPage({ setUser }: AuthPageProps) {
         }
 
         const data = await res.json();
-        
-        // ИСПРАВЛЕНО: Показываем сообщение о необходимости подтвердить email
+
         setSuccessMessage(data.message || "Пользователь успешно создан. Проверьте почту для подтверждения email.");
         setIsRegistrationSuccess(true);
-        
-        // Очищаем форму
+
         setName("");
         setEmail("");
         setPassword("");
@@ -87,111 +89,91 @@ export default function AuthPage({ setUser }: AuthPageProps) {
     setError("");
   };
 
-  // Если регистрация успешна, показываем только сообщение
   if (isRegistrationSuccess) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-        <div style={{ background: "#fff", padding: "40px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", maxWidth: "450px", width: "100%", textAlign: "center" }}>
-          <div style={{ background: "#d1fae5", color: "#059669", padding: "20px", borderRadius: "8px", marginBottom: "24px" }}>
-            <svg style={{ width: "48px", height: "48px", margin: "0 auto 16px", display: "block" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h2 style={{ margin: "0 0 12px", fontSize: "20px" }}>Регистрация успешна!</h2>
-            <p style={{ margin: "0 0 8px", lineHeight: "1.5" }}>{successMessage}</p>
-            <p style={{ margin: "0", fontSize: "14px", opacity: "0.9" }}>После подтверждения email вы сможете войти в систему.</p>
-          </div>
-          
-          <button 
-            onClick={handleGoToLogin}
-            style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontSize: "16px", fontWeight: "600", cursor: "pointer" }}
-          >
-            Перейти к входу
-          </button>
-        </div>
+      <div style={{ maxWidth: "500px", margin: "60px auto", padding: "30px", textAlign: "center", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "12px" }}>
+        <h2 style={{ color: "#166534", marginBottom: "15px" }}>Регистрация успешна!</h2>
+        <p style={{ color: "#15803d", fontSize: "16px", lineHeight: "1.6" }}>{successMessage}</p>
+        <p style={{ color: "#64748b", fontSize: "14px", marginTop: "15px" }}>После подтверждения email вы сможете войти в систему.</p>
+        <button
+          onClick={handleGoToLogin}
+          style={{ marginTop: "20px", padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+        >
+          Перейти к входу
+        </button>
       </div>
     );
   }
 
-  // Обычная форма авторизации/регистрации
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-      <div style={{ background: "#fff", padding: "40px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", maxWidth: "450px", width: "100%" }}>
-        <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#0f172a" }}>
-          {isLoginMode ? "Вход в систему" : "Регистрация"}
-        </h2>
+    <div style={{ maxWidth: "400px", margin: "60px auto", padding: "30px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "25px", color: "#0f172a" }}>{isLoginMode ? "Вход в систему" : "Регистрация"}</h2>
+      
+      {error && (
+        <div style={{ marginBottom: "20px", padding: "12px", background: "#fee2e2", color: "#ef4444", borderRadius: "8px", fontSize: "14px" }}>
+          {error}
+        </div>
+      )}
 
-        {error && (
-          <div style={{ background: "#fee2e2", color: "#dc2626", padding: "12px", borderRadius: "6px", marginBottom: "20px" }}>
-            {error}
+      <form onSubmit={handleSubmit}>
+        {!isLoginMode && (
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#475569", fontSize: "14px" }}>Имя</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }}
+            />
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {!isLoginMode && (
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", marginBottom: "8px", color: "#475569", fontWeight: "500" }}>
-                Имя
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-              />
-            </div>
-          )}
+        <div style={{ marginBottom: "15px" }}>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#475569", fontSize: "14px" }}>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }}
+          />
+        </div>
 
-          <div style={{ marginBottom: "20px" }}>
-            <label style={{ display: "block", marginBottom: "8px", color: "#475569", fontWeight: "500" }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-            />
-          </div>
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#475569", fontSize: "14px" }}>Пароль</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box" }}
+          />
+        </div>
 
-          <div style={{ marginBottom: "30px" }}>
-            <label style={{ display: "block", marginBottom: "8px", color: "#475569", fontWeight: "500" }}>
-              Пароль
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
-            />
-          </div>
+        <button
+          type="submit"
+          style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "15px" }}
+        >
+          {isLoginMode ? "Войти" : "Зарегистрироваться"}
+        </button>
+      </form>
 
-          <button
-            type="submit"
-            style={{ width: "100%", padding: "12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: "6px", fontSize: "16px", fontWeight: "600", cursor: "pointer" }}
-          >
-            {isLoginMode ? "Войти" : "Зарегистрироваться"}
-          </button>
-        </form>
-
-        <p style={{ textAlign: "center", marginTop: "20px", color: "#64748b" }}>
-          {isLoginMode ? "Нет аккаунта?" : "Уже есть аккаунт?"}{" "}
-          <button
-            onClick={() => {
-              setIsLoginMode(!isLoginMode);
-              setError("");
-              setSuccessMessage("");
-              setIsRegistrationSuccess(false);
-            }}
-            style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontWeight: "600" }}
-          >
-            {isLoginMode ? "Зарегистрироваться" : "Войти"}
-          </button>
-        </p>
-      </div>
+      <p style={{ textAlign: "center", marginTop: "20px", color: "#64748b", fontSize: "14px" }}>
+        {isLoginMode ? "Нет аккаунта?" : "Уже есть аккаунт?"}{" "}
+        <button
+          onClick={() => {
+            setIsLoginMode(!isLoginMode);
+            setError("");
+            setSuccessMessage("");
+            setIsRegistrationSuccess(false);
+          }}
+          style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontWeight: "600" }}
+        >
+          {isLoginMode ? "Зарегистрироваться" : "Войти"}
+        </button>
+      </p>
     </div>
   );
 }
