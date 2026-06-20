@@ -93,6 +93,8 @@ components:
   securitySchemes:
     CookieAuth:
       $ref: components/securitySchemes/CookieAuth.yaml
+    BearerAuth:
+      $ref: components/securitySchemes/BearerAuth.yaml
 tags:
   - name: auth
     description: Аутентификация и регистрация
@@ -109,4 +111,4 @@ tags:
   - name: user
     description: Пользовательские настройки и предпочтения
 security:
-  - CookieAuth: []
+  - BearerAuth: []
