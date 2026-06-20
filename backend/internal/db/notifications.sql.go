@@ -155,10 +155,11 @@ func (q *Queries) GetUserNotificationsUnread(ctx context.Context, arg GetUserNot
 	return items, nil
 }
 
-const markNotificationAsRead = `-- name: MarkNotificationAsRead :exec
+const markNotificationAsRead = `-- name: MarkNotificationAsRead :one
 UPDATE notifications
 SET is_read = true
 WHERE id = $1 AND user_id = $2
+RETURNING id, user_id, subscription_id, type, title, message, is_read, created_at
 `
 
 type MarkNotificationAsReadParams struct {
@@ -166,7 +167,18 @@ type MarkNotificationAsReadParams struct {
 	UserID pgtype.UUID `json:"user_id"`
 }
 
-func (q *Queries) MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error {
-	_, err := q.db.Exec(ctx, markNotificationAsRead, arg.ID, arg.UserID)
-	return err
+func (q *Queries) MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) (Notification, error) {
+	row := q.db.QueryRow(ctx, markNotificationAsRead, arg.ID, arg.UserID)
+	var i Notification
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubscriptionID,
+		&i.Type,
+		&i.Title,
+		&i.Message,
+		&i.IsRead,
+		&i.CreatedAt,
+	)
+	return i, err
 }

@@ -31,7 +31,7 @@ type NotificationResponse struct {
 	Title          string `json:"title"`
 	Message        string `json:"message"`
 	IsRead         bool   `json:"is_read"`
-	CreatedAt      string `json:"created_at"` // ИСПРАВЛЕНО: ISO 8601 вместо int64
+	CreatedAt      string `json:"created_at"` // ISO 8601
 }
 
 // List возвращает список уведомлений текущего пользователя
@@ -52,7 +52,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Пагинация
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
-	unreadOnlyStr := r.URL.Query().Get("unread_only") // ИСПРАВЛЕНО: читаем параметр
+	unreadOnlyStr := r.URL.Query().Get("unread_only")
 
 	limit := int32(20)
 	offset := int32(0)
@@ -72,7 +72,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 		unreadOnly = true
 	}
 
-	// ИСПРАВЛЕНО: получаем уведомления в зависимости от unread_only
+	// Получаем уведомления в зависимости от unread_only
 	var notifications []db.Notification
 	var err error
 
@@ -95,7 +95,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ИСПРАВЛЕНО: получаем total и unread_count
+	// Получаем total и unread_count
 	total, err := h.queries.GetUserNotificationsCount(r.Context(), userID)
 	if err != nil {
 		response.InternalError(w, "Failed to get total count")
@@ -111,7 +111,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Формируем ответ
 	result := make([]NotificationResponse, len(notifications))
 	for i, n := range notifications {
-		// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
+		// Конвертируем Unix timestamp в ISO 8601
 		createdAt := time.Unix(n.CreatedAt, 0).UTC().Format(time.RFC3339)
 
 		result[i] = NotificationResponse{
@@ -125,7 +125,7 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// ИСПРАВЛЕНО: возвращаем total и unread_count вместо limit и offset
+	// Возвращаем total и unread_count
 	response.WriteSuccess(w, map[string]interface{}{
 		"notifications": result,
 		"total":         total,
@@ -154,7 +154,8 @@ func (h *NotificationsHandler) MarkAsRead(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err := h.queries.MarkNotificationAsRead(r.Context(), db.MarkNotificationAsReadParams{
+	// ИСПРАВЛЕНО: получаем обновлённый объект уведомления
+	notification, err := h.queries.MarkNotificationAsRead(r.Context(), db.MarkNotificationAsReadParams{
 		ID:     notificationID,
 		UserID: userID,
 	})
@@ -163,8 +164,17 @@ func (h *NotificationsHandler) MarkAsRead(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	response.WriteSuccess(w, map[string]string{
-		"message": "Notification marked as read",
+	// ИСПРАВЛЕНО: возвращаем полный объект уведомления
+	createdAt := time.Unix(notification.CreatedAt, 0).UTC().Format(time.RFC3339)
+
+	response.WriteSuccess(w, NotificationResponse{
+		ID:             notification.ID.String(),
+		SubscriptionID: notification.SubscriptionID.String(),
+		Type:           notification.Type,
+		Title:          notification.Title,
+		Message:        notification.Message,
+		IsRead:         notification.IsRead.Bool,
+		CreatedAt:      createdAt,
 	})
 }
 
