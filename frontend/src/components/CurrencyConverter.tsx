@@ -188,9 +188,31 @@ export default function CurrencyConverter({
           <div style={{ fontSize: "14px", color: "#666", marginBottom: "8px" }}>
             Курс: 1 {from} = {currentPairRate} {to}
           </div>
-          <div style={{ fontSize: "32px", fontWeight: "bold", color: "#333" }}>
+          <div style={{ fontSize: "32px", fontWeight: "bold", color: "#333", marginBottom: "15px" }}>
             {result} {to}
           </div>
+
+          {user && (
+            <button
+              onClick={() => navigate("/create-notification", { state: { from, to } })}
+              style={{
+                background: "#7c3aed",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 20px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "background 0.2s",
+                boxShadow: "0 2px 4px rgba(124, 58, 237, 0.2)"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}
+            >
+              🔔 Создать уведомление для {from} ➔ {to}
+            </button>
+          )}
         </div>
       </div>
 
