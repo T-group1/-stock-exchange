@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -29,15 +31,15 @@ type SubscriptionResponse struct {
 	RateValue    float64 `json:"rate_value"`
 	Condition    string  `json:"condition"`
 	IsActive     bool    `json:"is_active"`
-	CreatedAt    string  `json:"created_at"`             // ИСПРАВЛЕНО: ISO 8601 вместо int64
-	TriggeredAt  *string `json:"triggered_at,omitempty"` // ИСПРАВЛЕНО: ISO 8601 вместо *int64
+	CreatedAt    string  `json:"created_at"`
+	TriggeredAt  *string `json:"triggered_at,omitempty"`
 }
 
 // CreateSubscriptionRequest запрос на создание подписки
 type CreateSubscriptionRequest struct {
 	CurrencyCode string  `json:"currency_code"`
 	RateValue    float64 `json:"rate_value"`
-	Condition    string  `json:"condition"` // "above" или "below"
+	Condition    string  `json:"condition"`
 }
 
 // List возвращает список подписок текущего пользователя
@@ -56,6 +58,7 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	subscriptions, err := h.queries.GetUserSubscriptions(r.Context(), userID)
 	if err != nil {
+		log.Printf("Failed to fetch subscriptions: %v", err)
 		response.InternalError(w, "Failed to fetch subscriptions")
 		return
 	}
@@ -64,7 +67,6 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	for _, s := range subscriptions {
 		rateFloat, _ := s.RateValue.Float64Value()
 
-		// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
 		createdAt := time.Unix(s.CreatedAt, 0).UTC().Format(time.RFC3339)
 
 		resp := SubscriptionResponse{
@@ -128,13 +130,16 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Проверяем что валюта существует
 	_, err := h.queries.GetCurrencyByCode(r.Context(), req.CurrencyCode)
 	if err != nil {
+		log.Printf("Currency %s not found: %v", req.CurrencyCode, err)
 		response.NotFound(w, "Currency not found")
 		return
 	}
 
-	// Конвертируем float64 в pgtype.Numeric
+	// ИСПРАВЛЕНО: конвертируем float64 в string перед Scan
 	rateValue := pgtype.Numeric{}
-	if err := rateValue.Scan(req.RateValue); err != nil {
+	rateStr := fmt.Sprintf("%.2f", req.RateValue)
+	if err := rateValue.Scan(rateStr); err != nil {
+		log.Printf("Failed to scan rate value %s: %v", rateStr, err)
 		response.InternalError(w, "Failed to process rate value")
 		return
 	}
@@ -146,13 +151,13 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Condition:    req.Condition,
 	})
 	if err != nil {
+		log.Printf("Failed to create subscription: %v", err)
 		response.InternalError(w, "Failed to create subscription")
 		return
 	}
 
 	rateFloat, _ := subscription.RateValue.Float64Value()
 
-	// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
 	createdAt := time.Unix(subscription.CreatedAt, 0).UTC().Format(time.RFC3339)
 
 	response.WriteCreated(w, SubscriptionResponse{
@@ -204,6 +209,7 @@ func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		TriggeredAt: pgtype.Int8{Valid: false},
 	})
 	if err != nil {
+		log.Printf("Failed to delete subscription: %v", err)
 		response.InternalError(w, "Failed to delete subscription")
 		return
 	}
