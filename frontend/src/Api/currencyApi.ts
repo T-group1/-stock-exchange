@@ -63,40 +63,34 @@ export async function fetchRates(): Promise<any> {
   }
 }
 
-export async function fetchChartData(base: string, quote: string) {
+export async function fetchChartData(base: string, quote: string, period: string = "1m") {
   try {
     const pair = `${base}_${quote}`.toUpperCase();
-    const response = await fetch(`/api/rates/${pair}`);
+    const response = await fetch(`/api/rates/${pair}?period=${period}`);
     if (!response.ok) {
       throw new Error(`Ошибка сервера: ${response.status}`);
     }
     const responseData = await response.json();
-    
     if (responseData && typeof responseData === 'object') {
       // ✅ ИСПРАВЛЕНИЕ: Явная проверка поля "history" (возвращается бэкендом)
       if (responseData.history && Array.isArray(responseData.history)) {
         return responseData.history;
       }
-      
       // Проверка поля "data" (для совместимости с OpenAPI спецификацией)
       if (responseData.data && Array.isArray(responseData.data)) {
         return responseData.data;
       }
-      
       // Общий поиск любого массива в значениях объекта (fallback)
       const values = Object.values(responseData);
       const arrayData = values.find(v => Array.isArray(v));
       if (arrayData) return arrayData;
     }
-    
     return responseData;
   } catch (error) {
     console.error("Не удалось загрузить график:", error);
   }
-
   // Fallback на mock данные
   const baseRate = mockRates[base] / (mockRates[quote] || 1);
-
   const mockData = [];
   for (let i = 12; i <= 30; i += 2) {
     mockData.push({ date: `${i} мая`, rate: +(baseRate * (1 + (Math.random() * 0.04 - 0.02))).toFixed(4) });
