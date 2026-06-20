@@ -15,7 +15,7 @@ import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 // ИСПРАВЛЕНО: функция для загрузки уведомлений с бэкенда
 async function fetchNotifications() {
   const token = localStorage.getItem("token");
-  const response = await fetch("http://localhost:8080/notifications", {
+  const response = await fetch("/api/notifications", {
     headers: {
       "Authorization": `Bearer ${token}`,
     },
@@ -142,7 +142,6 @@ export default function App() {
                 user={user}
                 notifications={notifications}
                 setNotifications={setNotifications}
-                rates={rates}
               />
             }
           />

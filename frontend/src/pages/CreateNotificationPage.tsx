@@ -50,7 +50,7 @@ export default function CreateNotificationPage({
         condition: condition
       };
 
-      const response = await fetch("http://localhost:8080/subscriptions", {
+      const response = await fetch("/api/subscriptions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
