@@ -1,5 +1,5 @@
-// Используем относительный URL для production или localhost для разработки
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+// Используем префикс /api как и AuthPage
+const API_BASE_URL = "/api";
 
 export interface FavoritePair {
   from: string;
