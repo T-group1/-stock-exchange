@@ -57,15 +57,36 @@ export default function NotificationManagerPage({
     setFavorites([]);
     setNotifications([]);
     
-    // ИСПРАВЛЕНО: очищаем localStorage при logout
     localStorage.removeItem("user");
     localStorage.removeItem("notifications");
     localStorage.removeItem("favorites");
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     
     navigate("/");
   };
 
-  const removeNotification = (id: number) => {
+  // ИСПРАВЛЕНО: удаляем подписку и на бэкенде тоже
+  const removeNotification = async (id: string) => {
+    const token = localStorage.getItem("token");
+    
+    try {
+      const response = await fetch(`/api/subscriptions/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to delete subscription on backend");
+      }
+    } catch (err) {
+      console.error("Error deleting subscription:", err);
+    }
+    
+    // Удаляем из локального состояния в любом случае
     setNotifications(notifications.filter((n: any) => n.id !== id));
   };
 
