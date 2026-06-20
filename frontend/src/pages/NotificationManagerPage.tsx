@@ -10,7 +10,7 @@ export default function NotificationManagerPage({
 }: any) { 
   const navigate = useNavigate(); 
   const [hoverCreate, setHoverCreate] = useState(false);
-const [hoverBtnLogout, setHoverBtnLogout] = useState(false);
+  const [hoverBtnLogout, setHoverBtnLogout] = useState(false);
 
   if (!user) {
     return (
@@ -51,10 +51,17 @@ const [hoverBtnLogout, setHoverBtnLogout] = useState(false);
       </div>
     );
   }
+  
   const handleLogout = () => {
     setUser(null);
     setFavorites([]);
     setNotifications([]);
+    
+    // ИСПРАВЛЕНО: очищаем localStorage при logout
+    localStorage.removeItem("user");
+    localStorage.removeItem("notifications");
+    localStorage.removeItem("favorites");
+    
     navigate("/");
   };
 
@@ -146,4 +153,4 @@ const [hoverBtnLogout, setHoverBtnLogout] = useState(false);
       )}
     </div>
   );
-} 
+}
