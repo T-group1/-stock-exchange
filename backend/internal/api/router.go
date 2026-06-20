@@ -2,102 +2,94 @@ package api
 
 import (
 	"net/http"
-	"time"
 
 	"T_Project/internal/api/handlers"
-	customMiddleware "T_Project/internal/api/middleware"
+	"T_Project/internal/api/middleware"
 	"T_Project/internal/config"
 	"T_Project/internal/db"
-	"T_Project/internal/service/auth"
 
 	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-// Router настраивает и возвращает HTTP роутер
+// Router создаёт и настраивает маршрутизатор
 func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	r := chi.NewRouter()
 
-	// Chi middleware
-	r.Use(chiMiddleware.RealIP)
-	r.Use(chiMiddleware.Logger)
-	r.Use(chiMiddleware.Recoverer)
-	r.Use(chiMiddleware.RequestID)
-	r.Use(chiMiddleware.Compress(5))
-	r.Use(chiMiddleware.Timeout(30 * time.Second))
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
 
-	// Custom middleware
-	r.Use(customMiddleware.CORS)
+	// CORS middleware
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	// Создаём хендлеры
-	authHandler := handlers.NewAuthHandler(queries, cfg)
-	currenciesHandler := handlers.NewCurrenciesHandler(queries)
-	ratesHandler := handlers.NewRatesHandler(queries)
-	convertHandler := handlers.NewConvertHandler(queries)
-	favoritesHandler := handlers.NewFavoritesHandler(queries)
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
 
-	// Создаём JWT сервис для auth middleware
-	jwtService := auth.NewJWTService(
-		cfg.JWT.Secret,
-		cfg.JWT.AccessTokenExpiry,
-		cfg.JWT.RefreshTokenExpiry,
-	)
-
-	// Создаём хендлеры для алертов
-	notificationsHandler := handlers.NewNotificationsHandler(queries)
-	subscriptionsHandler := handlers.NewSubscriptionsHandler(queries)
-	settingsHandler := handlers.NewNotificationSettingsHandler(queries)
-
-	// Auth endpoints (публичные)
-	r.Post("/auth/register", authHandler.Register)
-	r.Post("/auth/login", authHandler.Login)
-	r.Get("/auth/verify", authHandler.Verify) // ИСПРАВЛЕНО ЭТАП 11: GET для перехода по ссылке из письма
-
-	// Публичные эндпоинты
-	r.Route("/currencies", func(r chi.Router) {
-		r.Get("/", currenciesHandler.List)
-		r.Get("/{code}", currenciesHandler.GetByCode)
+			next.ServeHTTP(w, r)
+		})
 	})
 
-	r.Route("/rates", func(r chi.Router) {
-		r.Get("/", ratesHandler.GetAll)
-		r.Get("/{pair}", ratesHandler.GetHistory) // ✅ ИСПРАВЛЕНО: GetHistory вместо GetByPair
-	})
+	// Публичные маршруты (без авторизации)
+	r.Post("/auth/register", handlers.NewAuthHandler(queries, cfg).Register)
+	r.Post("/auth/login", handlers.NewAuthHandler(queries, cfg).Login)
+	r.Post("/auth/verify", handlers.NewAuthHandler(queries, cfg).Verify)
+	r.Post("/auth/refresh", handlers.NewAuthHandler(queries, cfg).Refresh)
 
-	r.Post("/convert", convertHandler.Convert)
-
-	// Защищённые эндпоинты (требуют авторизации)
+	// Защищённые маршруты (требуют авторизации)
 	r.Group(func(r chi.Router) {
-		r.Use(customMiddleware.Auth(jwtService))
+		r.Use(middleware.JWTAuthMiddleware(cfg.JWT.Secret))
 
-		r.Route("/favorites", func(r chi.Router) {
-			r.Get("/", favoritesHandler.List)
-			r.Post("/", favoritesHandler.Add)
-			r.Delete("/{pair}", favoritesHandler.Remove)
-		})
+		// Auth
+		r.Get("/auth/me", handlers.NewAuthHandler(queries, cfg).Me)
 
-		r.Route("/notifications", func(r chi.Router) {
-			r.Get("/", notificationsHandler.List)
-			r.Get("/unread-count", notificationsHandler.GetUnreadCount)
-			r.Post("/{id}/read", notificationsHandler.MarkAsRead)
-		})
+		// Currencies
+		r.Get("/currencies", handlers.NewCurrenciesHandler(queries).List)
 
+		// Rates
+		r.Get("/rates", handlers.NewRatesHandler(queries).Latest)
+		r.Get("/rates/{pair}", handlers.NewRatesHandler(queries).History)
+		r.Post("/convert", handlers.NewConversionHandler(queries).Convert)
+
+		// Subscriptions
 		r.Route("/subscriptions", func(r chi.Router) {
-			r.Get("/", subscriptionsHandler.List)
-			r.Post("/", subscriptionsHandler.Create)
-			r.Delete("/{id}", subscriptionsHandler.Delete)
+			r.Get("/", handlers.NewSubscriptionsHandler(queries).List)
+			r.Post("/", handlers.NewSubscriptionsHandler(queries).Create)
+			r.Delete("/{id}", handlers.NewSubscriptionsHandler(queries).Delete)
 		})
 
-		r.Route("/notifications/settings", func(r chi.Router) {
-			r.Get("/", settingsHandler.Get)
-			r.Put("/", settingsHandler.Update)
+		// Notifications
+		// ИСПРАВЛЕНО: literal routes идут ПЕРЕД parameterized
+		r.Route("/notifications", func(r chi.Router) {
+			r.Get("/", handlers.NewNotificationsHandler(queries).List)
+			r.Get("/unread-count", handlers.NewNotificationsHandler(queries).GetUnreadCount)
+			r.Route("/settings", func(r chi.Router) {
+				r.Get("/", handlers.NewNotificationSettingsHandler(queries).Get)
+				r.Put("/", handlers.NewNotificationSettingsHandler(queries).Update)
+			})
+			// Parameterized route в конце
+			r.Post("/{id}/read", handlers.NewNotificationsHandler(queries).MarkAsRead)
 		})
-	})
 
-	// Health check
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		// User pairs
+		r.Get("/user/pairs", handlers.NewUserPairsHandler(queries).Get)
+		r.Put("/user/pairs", handlers.NewUserPairsHandler(queries).Update)
+
+		// Favorites
+		r.Route("/favorites", func(r chi.Router) {
+			r.Get("/", handlers.NewFavoritesHandler(queries).List)
+			r.Post("/{pair}", handlers.NewFavoritesHandler(queries).Add)
+			r.Delete("/{pair}", handlers.NewFavoritesHandler(queries).Remove)
+		})
 	})
 
 	return r
