@@ -16,3 +16,10 @@ properties:
         rate:
           type: number
           format: double
+        source:
+          description: Источник данных
+          type: string
+        change_percentage:
+          description: Изменение курса в процентах
+          type: number
+          format: double

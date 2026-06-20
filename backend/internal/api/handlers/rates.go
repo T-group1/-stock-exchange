@@ -30,8 +30,10 @@ type RateResponse struct {
 
 // HistoryPoint представляет точку данных для графика
 type HistoryPoint struct {
-	Date string  `json:"date"`
-	Rate float64 `json:"rate"`
+	Date             string  `json:"date"`
+	Rate             float64 `json:"rate"`
+	Source           string  `json:"source,omitempty"`
+	ChangePercentage float64 `json:"change_percentage,omitempty"`
 }
 
 // HistoryResponse представляет ответ для истории курса пары
@@ -48,9 +50,9 @@ func fillHistoryGaps(history []HistoryPoint, days int) []HistoryPoint {
 	}
 
 	// Создаем карту существующих данных
-	historyMap := make(map[string]float64)
+	historyMap := make(map[string]HistoryPoint)
 	for _, point := range history {
-		historyMap[point.Date] = point.Rate
+		historyMap[point.Date] = point
 	}
 
 	// Определяем диапазон дат
@@ -59,22 +61,21 @@ func fillHistoryGaps(history []HistoryPoint, days int) []HistoryPoint {
 
 	// Генерируем полный список дат
 	var filledHistory []HistoryPoint
-	var lastRate float64
+	var lastPoint HistoryPoint
 
 	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
 		dateStr := d.Format("2006-01-02")
 
-		if rate, exists := historyMap[dateStr]; exists {
-			filledHistory = append(filledHistory, HistoryPoint{
-				Date: dateStr,
-				Rate: rate,
-			})
-			lastRate = rate
-		} else if lastRate > 0 {
+		if point, exists := historyMap[dateStr]; exists {
+			filledHistory = append(filledHistory, point)
+			lastPoint = point
+		} else if lastPoint.Rate > 0 {
 			// Заполняем пропуск последним известным курсом
 			filledHistory = append(filledHistory, HistoryPoint{
-				Date: dateStr,
-				Rate: lastRate,
+				Date:             dateStr,
+				Rate:             lastPoint.Rate,
+				Source:           lastPoint.Source,
+				ChangePercentage: 0.0, // При заполнении пропуска изменение = 0
 			})
 		}
 	}
@@ -280,8 +281,10 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		for i := 0; i <= days; i++ {
 			d := time.Now().AddDate(0, 0, -i)
 			history = append(history, HistoryPoint{
-				Date: d.Format("2006-01-02"),
-				Rate: 1.0,
+				Date:             d.Format("2006-01-02"),
+				Rate:             1.0,
+				Source:           "INTERNAL",
+				ChangePercentage: 0.0,
 			})
 		}
 
@@ -333,9 +336,16 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
+			changePercent := 0.0
+			if cp, err := row.ChangePercentage.Float64Value(); err == nil && cp.Valid {
+				changePercent = cp.Float64
+			}
+
 			history = append(history, HistoryPoint{
-				Date: row.RateDate.Time.Format("2006-01-02"),
-				Rate: 1.0 / quoteRatePerUnit,
+				Date:             row.RateDate.Time.Format("2006-01-02"),
+				Rate:             1.0 / quoteRatePerUnit,
+				Source:           row.Source,
+				ChangePercentage: changePercent,
 			})
 		}
 
@@ -385,6 +395,12 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем source из первой записи baseHistory
+	baseSource := ""
+	if len(baseHistory) > 0 {
+		baseSource = baseHistory[0].Source
+	}
+
 	quoteMap := make(map[string]float64)
 	for _, row := range quoteHistory {
 		rateFloat, err := row.Rate.Float64Value()
@@ -416,9 +432,16 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		changePercent := 0.0
+		if cp, err := row.ChangePercentage.Float64Value(); err == nil && cp.Valid {
+			changePercent = cp.Float64
+		}
+
 		history = append(history, HistoryPoint{
-			Date: dateStr,
-			Rate: baseRatePerRub / quoteRatePerRub,
+			Date:             dateStr,
+			Rate:             baseRatePerRub / quoteRatePerRub,
+			Source:           baseSource,
+			ChangePercentage: changePercent,
 		})
 	}
 
