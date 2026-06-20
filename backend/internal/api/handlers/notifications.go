@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"T_Project/internal/api/middleware"
 	"T_Project/internal/api/response"
@@ -30,7 +31,7 @@ type NotificationResponse struct {
 	Title          string `json:"title"`
 	Message        string `json:"message"`
 	IsRead         bool   `json:"is_read"`
-	CreatedAt      int64  `json:"created_at"`
+	CreatedAt      string `json:"created_at"` // ИСПРАВЛЕНО: ISO 8601 вместо int64
 }
 
 // List возвращает список уведомлений текущего пользователя
@@ -51,9 +52,11 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Пагинация
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
+	unreadOnlyStr := r.URL.Query().Get("unread_only") // ИСПРАВЛЕНО: читаем параметр
 
 	limit := int32(20)
 	offset := int32(0)
+	unreadOnly := false
 
 	if limitStr != "" {
 		if l, err := strconv.ParseInt(limitStr, 10, 32); err == nil {
@@ -65,19 +68,52 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 			offset = int32(o)
 		}
 	}
+	if unreadOnlyStr == "true" {
+		unreadOnly = true
+	}
 
-	notifications, err := h.queries.GetUserNotifications(r.Context(), db.GetUserNotificationsParams{
-		UserID: userID,
-		Limit:  limit,
-		Offset: offset,
-	})
+	// ИСПРАВЛЕНО: получаем уведомления в зависимости от unread_only
+	var notifications []db.Notification
+	var err error
+
+	if unreadOnly {
+		notifications, err = h.queries.GetUserNotificationsUnread(r.Context(), db.GetUserNotificationsUnreadParams{
+			UserID: userID,
+			Limit:  limit,
+			Offset: offset,
+		})
+	} else {
+		notifications, err = h.queries.GetUserNotifications(r.Context(), db.GetUserNotificationsParams{
+			UserID: userID,
+			Limit:  limit,
+			Offset: offset,
+		})
+	}
+
 	if err != nil {
 		response.InternalError(w, "Failed to fetch notifications")
 		return
 	}
 
+	// ИСПРАВЛЕНО: получаем total и unread_count
+	total, err := h.queries.GetUserNotificationsCount(r.Context(), userID)
+	if err != nil {
+		response.InternalError(w, "Failed to get total count")
+		return
+	}
+
+	unreadCount, err := h.queries.GetUnreadCount(r.Context(), userID)
+	if err != nil {
+		response.InternalError(w, "Failed to get unread count")
+		return
+	}
+
+	// Формируем ответ
 	result := make([]NotificationResponse, len(notifications))
 	for i, n := range notifications {
+		// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
+		createdAt := time.Unix(n.CreatedAt, 0).UTC().Format(time.RFC3339)
+
 		result[i] = NotificationResponse{
 			ID:             n.ID.String(),
 			SubscriptionID: n.SubscriptionID.String(),
@@ -85,14 +121,15 @@ func (h *NotificationsHandler) List(w http.ResponseWriter, r *http.Request) {
 			Title:          n.Title,
 			Message:        n.Message,
 			IsRead:         n.IsRead.Bool,
-			CreatedAt:      n.CreatedAt,
+			CreatedAt:      createdAt,
 		}
 	}
 
+	// ИСПРАВЛЕНО: возвращаем total и unread_count вместо limit и offset
 	response.WriteSuccess(w, map[string]interface{}{
 		"notifications": result,
-		"limit":         limit,
-		"offset":        offset,
+		"total":         total,
+		"unread_count":  unreadCount,
 	})
 }
 

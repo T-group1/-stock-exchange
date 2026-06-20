@@ -9,6 +9,16 @@ WHERE user_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: GetUserNotificationsUnread :many
+SELECT * FROM notifications
+WHERE user_id = $1 AND is_read = false
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
+-- name: GetUserNotificationsCount :one
+SELECT COUNT(*) FROM notifications
+WHERE user_id = $1;
+
 -- name: MarkNotificationAsRead :exec
 UPDATE notifications
 SET is_read = true
