@@ -16,6 +16,13 @@ interface Line {
   length: number;
 }
 
+// Маппинг количества дней в период для API
+const getPeriodFromDays = (d: number): string => {
+  if (d <= 7) return "1w";
+  if (d <= 30) return "1m";
+  return "3m";
+};
+
 export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProps) {
   const [data, setData] = useState<any[]>([]);
   const [days, setDays] = useState<number>(30);
@@ -30,7 +37,9 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetchChartData(baseCurrency, quoteCurrency);
+        // Передаём период на бэкенд, чтобы получить нужный диапазон данных
+        const period = getPeriodFromDays(days);
+        const response = await fetchChartData(baseCurrency, quoteCurrency, period);
         
         let rawPoints: any[] = [];
         if (Array.isArray(response)) {
@@ -63,11 +72,12 @@ export default function CurrencyChart({ baseCurrency, quoteCurrency }: ChartProp
           return { rate: extractedRate, date: displayDate };
         });
 
-        setData(formattedData.slice(0, days).reverse());
+        // Данные уже идут от старых к новым (ASC) — просто берём последние N записей
+        // БЕЗ reverse(), чтобы график шёл слева направо: прошлое → настоящее
+        setData(formattedData.slice(-days));
 
       } catch (err) {
         console.error("Ошибка при подготовке данных графика:", err);
-
         setData([]);
       }
     };

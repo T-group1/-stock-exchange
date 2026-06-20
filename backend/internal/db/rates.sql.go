@@ -104,7 +104,7 @@ func (q *Queries) GetLatestRates(ctx context.Context) ([]CurrencyRate, error) {
 }
 
 const getRateHistory = `-- name: GetRateHistory :many
-SELECT rate, rate_date
+SELECT rate, rate_date, source, change_percentage
 FROM currency_rates
 WHERE currency_code = $1 AND rate_date >= $2
 ORDER BY rate_date ASC
@@ -116,8 +116,10 @@ type GetRateHistoryParams struct {
 }
 
 type GetRateHistoryRow struct {
-	Rate     pgtype.Numeric `json:"rate"`
-	RateDate pgtype.Date    `json:"rate_date"`
+	Rate             pgtype.Numeric `json:"rate"`
+	RateDate         pgtype.Date    `json:"rate_date"`
+	Source           string         `json:"source"`
+	ChangePercentage pgtype.Numeric `json:"change_percentage"`
 }
 
 func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) ([]GetRateHistoryRow, error) {
@@ -129,7 +131,12 @@ func (q *Queries) GetRateHistory(ctx context.Context, arg GetRateHistoryParams) 
 	items := []GetRateHistoryRow{}
 	for rows.Next() {
 		var i GetRateHistoryRow
-		if err := rows.Scan(&i.Rate, &i.RateDate); err != nil {
+		if err := rows.Scan(
+			&i.Rate,
+			&i.RateDate,
+			&i.Source,
+			&i.ChangePercentage,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

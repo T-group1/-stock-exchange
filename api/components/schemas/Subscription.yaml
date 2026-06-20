@@ -3,26 +3,35 @@ properties:
   id:
     type: string
     format: uuid
+    description: Уникальный идентификатор подписки
   user_id:
     type: string
     format: uuid
-  currency_pair:
+    description: Идентификатор пользователя
+  currency_code:
     type: string
-    example: USD/RUB
+    description: Код валюты (например, USD, EUR, CAD)
+    example: USD
+    pattern: '^[A-Z]{3}$'
   rate_value:
     type: number
     format: double
+    description: Значение курса для срабатывания уведомления
+    example: 75.50
   condition:
     type: string
     enum:
       - above
       - below
+    description: Условие срабатывания (выше или ниже указанного значения)
   is_active:
     type: boolean
     default: true
+    description: Активна ли подписка
   created_at:
     type: string
     format: date-time
+    description: Время создания подписки
   triggered_at:
     description: Время срабатывания уведомления
     type: string
@@ -31,7 +40,7 @@ properties:
 required:
   - id
   - user_id
-  - currency_pair
+  - currency_code
   - rate_value
   - condition
   - created_at

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ type rateInfo struct {
 	Rate             float64
 	Date             string
 	Source           string
-	ChangePercentage float64 
+	ChangePercentage float64 // <-- ДОБАВЛЕНО: для устранения N+1 запросов
 }
 
 // getLatestRateMap возвращает map[CharCode]rateInfo для всех последних курсов
@@ -44,6 +45,7 @@ func getLatestRateMap(ctx context.Context, queries db.Querier) (map[string]rateI
 			latestDate = dateStr
 		}
 
+		// Безопасное извлечение change_percentage
 		var changePct float64
 		changePctVal, err := rate.ChangePercentage.Float64Value()
 		if err == nil && changePctVal.Valid {
@@ -55,7 +57,7 @@ func getLatestRateMap(ctx context.Context, queries db.Querier) (map[string]rateI
 			Rate:             rateFloat.Float64,
 			Date:             dateStr,
 			Source:           rate.Source,
-			ChangePercentage: changePct,
+			ChangePercentage: changePct, // <-- ДОБАВЛЕНО
 		}
 	}
 
@@ -82,6 +84,7 @@ func getRateMapByDate(ctx context.Context, queries db.Querier, date time.Time) (
 		}
 
 		dateStr := rate.RateDate.Time.Format("2006-01-02")
+
 		rateMap[rate.CurrencyCode] = rateInfo{
 			CurrencyCode: rate.CurrencyCode,
 			Rate:         rateFloat.Float64,
@@ -122,25 +125,53 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
 }
 
-// --- НОВЫЕ ФУНКЦИИ ДЛЯ auth.go ---
-
-// parseJSON декодирует JSON из тела запроса в указанную структуру
-func parseJSON(r *http.Request, v any) error {
+// parseJSON парсит JSON из request body в указанный объект
+func parseJSON(r *http.Request, v interface{}) error {
+	if r.Body == nil {
+		return fmt.Errorf("request body is empty")
+	}
 	defer r.Body.Close()
-	return json.NewDecoder(r.Body).Decode(v)
+
+	// Читаем body (ограничение 1MB для безопасности)
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		return fmt.Errorf("failed to read request body: %w", err)
+	}
+
+	if len(body) == 0 {
+		return fmt.Errorf("request body is empty")
+	}
+
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	return nil
 }
 
-// respondJSON отправляет JSON-ответ с указанным статусом
-func respondJSON(w http.ResponseWriter, status int, data any) {
-	respondWithJSON(w, status, data)
+// respondJSON отправляет JSON-ответ (обёртка над respondWithJSON для единообразия)
+func respondJSON(w http.ResponseWriter, code int, payload interface{}) {
+	respondWithJSON(w, code, payload)
 }
 
-// respondError отправляет ответ с ошибкой в формате JSON
-func respondError(w http.ResponseWriter, status int, message string) {
-	respondWithJSON(w, status, map[string]string{"error": message})
+// ErrorResponse структура для error responses (ИСПРАВЛЕНО: добавлено поле Code для соответствия OpenAPI)
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
+// respondError отправляет error response в JSON формате (ИСПРАВЛЕНО: добавлен параметр code)
+func respondError(w http.ResponseWriter, httpCode int, errorCode string, message string) {
+	respondWithJSON(w, httpCode, ErrorResponse{
+		Error:   http.StatusText(httpCode),
+		Message: message,
+		Code:    errorCode,
+	})
 }
