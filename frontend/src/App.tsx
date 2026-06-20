@@ -12,15 +12,15 @@ import CurrencyConverter from "./components/CurrencyConverter";
 import FavoritesList from "./components/FavoritesList";
 import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 
-// ИСПРАВЛЕНО: функция для загрузки уведомлений с бэкенда
-async function fetchNotifications() {
+// ИСПРАВЛЕНО: загружаем ПОДПИСКИ (subscriptions), а не уведомления!
+async function fetchSubscriptions() {
   const token = localStorage.getItem("token");
-  const response = await fetch("/api/notifications", {
+  const response = await fetch("/api/subscriptions", {
     headers: {
       "Authorization": `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error("Failed to fetch notifications");
+  if (!response.ok) throw new Error("Failed to fetch subscriptions");
   return response.json();
 }
 
@@ -32,6 +32,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [favorites, setFavorites] = useState<FavoritePair[]>([]);
+  // ИСПРАВЛЕНО: теперь это список подписок (алёртов), а не уведомлений
   const [notifications, setNotifications] = useState<any[]>([]);
   const [rates, setRates] = useState<any>({ pair: "USD_RUB", rate: 73.3591 });
 
@@ -43,12 +44,11 @@ export default function App() {
     }
   }, [user]);
 
-  // Загрузка favorites с бэкенда при логине
+  // Загрузка favorites и subscriptions с бэкенда при логине
   useEffect(() => {
     if (user) {
       fetchFavorites()
         .then((data) => {
-          // Конвертируем строки формата "USD_RUB" в объекты {from: "USD", to: "RUB"}
           const pairs: FavoritePair[] = data.favorite_pairs.map((pair: string) => {
             const [from, to] = pair.split("_");
             return { from, to };
@@ -60,13 +60,22 @@ export default function App() {
           setFavorites([]);
         });
         
-      // ИСПРАВЛЕНО: Загрузка уведомлений с бэкенда при логине
-      fetchNotifications()
+      // ИСПРАВЛЕНО: Загружаем ПОДПИСКИ (subscriptions), а не notifications
+      fetchSubscriptions()
         .then((data) => {
-          setNotifications(data.notifications || []);
+          // Маппим подписки в формат, который ожидает NotificationManagerPage
+          const subs = (data.subscriptions || []).map((s: any) => ({
+            id: s.id,
+            from: s.currency_code,
+            to: "RUB", // Бэкенд хранит курс к RUB
+            condition: s.condition,
+            value: s.rate_value,
+            is_active: s.is_active
+          }));
+          setNotifications(subs);
         })
         .catch((err) => {
-          console.error("Failed to load notifications:", err);
+          console.error("Failed to load subscriptions:", err);
           setNotifications([]);
         });
     } else {
@@ -74,10 +83,6 @@ export default function App() {
       setNotifications([]);
     }
   }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications));
-  }, [notifications]);
 
   useEffect(() => {
     console.log(`=== НАЧАЛО ЗАПРОСА ДЛЯ ПАРЫ: ${from}_${to} ===`);
