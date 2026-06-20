@@ -149,6 +149,7 @@ export default function App() {
                 user={user}
                 notifications={notifications}
                 setNotifications={setNotifications}
+                rates={rates}
               />
             }
           />

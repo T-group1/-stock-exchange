@@ -5,7 +5,8 @@ import { apiFetch } from "../Api/apiClient";
 export default function CreateNotificationPage({
   user,
   notifications,
-  setNotifications
+  setNotifications,
+  rates
 }: any) {
   const navigate = useNavigate();
   const [from, setFrom] = useState("USD");
@@ -84,6 +85,8 @@ export default function CreateNotificationPage({
     }
   };
 
+  const availableCurrencies = rates ? Object.keys(rates).filter(key => key !== 'date' && key !== 'pair' && key !== 'rate') : ["USD", "EUR", "RUB", "CNY", "GBP", "JPY"];
+
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
       <h2 style={{ marginBottom: "30px", color: "#0f172a" }}>Создание нового уведомления</h2>
@@ -98,11 +101,10 @@ export default function CreateNotificationPage({
             onChange={(e) => setFrom(e.target.value)}
             style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "16px", outline: "none" }}
           >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-            <option value="JPY">JPY</option>
-            <option value="CNY">CNY</option>
+            {/* Динамический список */}
+            {availableCurrencies.map((currency) => (
+              <option key={`from-${currency}`} value={currency}>{currency}</option>
+            ))}
           </select>
         </div>
 
@@ -115,9 +117,10 @@ export default function CreateNotificationPage({
             onChange={(e) => setTo(e.target.value)}
             style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "16px", outline: "none" }}
           >
-            <option value="RUB">RUB</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
+            {/* Динамический список (можно оставить только RUB, если бэкенд поддерживает конвертацию только к рублю, или сделать полный список) */}
+            {availableCurrencies.map((currency) => (
+              <option key={`to-${currency}`} value={currency}>{currency}</option>
+            ))}
           </select>
         </div>
 
