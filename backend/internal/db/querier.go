@@ -11,7 +11,7 @@ import (
 )
 
 type Querier interface {
-	// Добавление валюты в избранное.
+	// Добавление валютной пары в избранное.
 	// ON CONFLICT DO NOTHING гарантирует, что при повторном вызове не будет ошибки 500.
 	AddFavorite(ctx context.Context, arg AddFavoriteParams) error
 	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (Currency, error)
@@ -33,14 +33,14 @@ type Querier interface {
 	GetUnreadCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
-	// Получение только кодов (удобно, если в API нужно просто проверить, что валюта в избранном)
-	GetUserFavoriteCodes(ctx context.Context, userID pgtype.UUID) ([]string, error)
-	// Получение полного списка избранных валют с их названиями (для красивого JSON в API)
-	GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]Currency, error)
+	// Получение только валютных пар (удобно, если в API нужно просто проверить, что пара в избранном)
+	GetUserFavoritePairs(ctx context.Context, userID pgtype.UUID) ([]string, error)
+	// Получение полного списка избранных валютных пар
+	GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]string, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
-	// Удаление валюты из избранного
+	// Удаление валютной пары из избранного
 	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
 	UpdateVerificationToken(ctx context.Context, arg UpdateVerificationTokenParams) (User, error)
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
