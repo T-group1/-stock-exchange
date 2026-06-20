@@ -11,10 +11,8 @@ export interface FavoritesResponse {
 
 // Получить токен из localStorage
 const getToken = (): string | null => {
-  const user = localStorage.getItem("user");
-  if (!user) return null;
-  const userData = JSON.parse(user);
-  return userData.accessToken || null;
+  // ИСПРАВЛЕНО: Получаем токен напрямую из localStorage, а не из userData
+  return localStorage.getItem("access_token");
 };
 
 // Получить список избранных пар
