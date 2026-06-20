@@ -38,6 +38,8 @@ type Querier interface {
 	// Получение полного списка избранных валютных пар
 	GetUserFavorites(ctx context.Context, userID pgtype.UUID) ([]string, error)
 	GetUserNotifications(ctx context.Context, arg GetUserNotificationsParams) ([]Notification, error)
+	GetUserNotificationsCount(ctx context.Context, userID pgtype.UUID) (int64, error)
+	GetUserNotificationsUnread(ctx context.Context, arg GetUserNotificationsUnreadParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
 	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
 	// Удаление валютной пары из избранного
