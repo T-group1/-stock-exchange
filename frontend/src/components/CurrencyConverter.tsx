@@ -194,7 +194,7 @@ export default function CurrencyConverter({
         </div>
       </div>
 
-      <CurrencyChart rates={rates} from={from} to={to} />
+      <CurrencyChart baseCurrency={from} quoteCurrency={to} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { fetchRates } from "./Api/currencyApi";
-import { fetchFavorites, FavoritePair } from "./Api/favoritesApi";
+import { fetchFavorites } from "./Api/favoritesApi";
+import type { FavoritePair } from "./Api/favoritesApi";
 import Header from "./components/Header";
 import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
