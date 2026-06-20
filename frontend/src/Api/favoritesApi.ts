@@ -1,3 +1,4 @@
+import { apiFetch } from "./apiClient";
 // Используем префикс /api как и AuthPage
 const API_BASE_URL = "/api";
 
@@ -22,7 +23,7 @@ export const fetchFavorites = async (): Promise<FavoritesResponse> => {
     return { favorite_pairs: [] };
   }
 
-  const response = await fetch(`${API_BASE_URL}/favorites`, {
+  const response = await apiFetch(`${API_BASE_URL}/favorites`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -44,7 +45,7 @@ export const addFavorite = async (currencyPair: string): Promise<void> => {
     throw new Error("User not authenticated");
   }
 
-  const response = await fetch(`${API_BASE_URL}/favorites`, {
+  const response = await apiFetch(`${API_BASE_URL}/favorites`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -65,7 +66,7 @@ export const removeFavorite = async (currencyPair: string): Promise<void> => {
     throw new Error("User not authenticated");
   }
 
-  const response = await fetch(`${API_BASE_URL}/favorites/${currencyPair}`, {
+  const response = await apiFetch(`${API_BASE_URL}/favorites/${currencyPair}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token}`,

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { fetchRates } from "./Api/currencyApi";
 import { fetchFavorites } from "./Api/favoritesApi";
 import type { FavoritePair } from "./Api/favoritesApi";
+import { apiFetch } from "./Api/apiClient";
 import Header from "./components/Header";
 import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -12,10 +13,11 @@ import CurrencyConverter from "./components/CurrencyConverter";
 import FavoritesList from "./components/FavoritesList";
 import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 
+
 // ИСПРАВЛЕНО: загружаем ПОДПИСКИ (subscriptions), а не уведомления!
 async function fetchSubscriptions() {
   const token = localStorage.getItem("token");
-  const response = await fetch("/api/subscriptions", {
+  const response = await apiFetch("/api/subscriptions", {
     headers: {
       "Authorization": `Bearer ${token}`,
     },
@@ -59,7 +61,7 @@ export default function App() {
           console.error("Failed to load favorites:", err);
           setFavorites([]);
         });
-        
+
       // ИСПРАВЛЕНО: Загружаем ПОДПИСКИ (subscriptions), а не notifications
       fetchSubscriptions()
         .then((data) => {

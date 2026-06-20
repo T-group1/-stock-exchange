@@ -316,3 +316,64 @@ func generateToken() string {
 
 	return hex.EncodeToString(bytes)
 }
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var req RefreshRequest
+
+	if err := parseJSON(r, &req); err != nil {
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Invalid request body")
+		return
+	}
+
+	if req.RefreshToken == "" {
+		respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Refresh token is required")
+		return
+	}
+
+	// 1. Валидируем токен
+	claims, err := h.jwtService.ValidateToken(req.RefreshToken)
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid or expired refresh token")
+		return
+	}
+
+	// 2. Проверяем, что это именно refresh токен
+	if claims["type"] != "refresh" {
+		respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid token type")
+		return
+	}
+
+	// 3. Достаем данные пользователя из токена
+	userID, ok1 := claims["sub"].(string)
+	email, ok2 := claims["email"].(string)
+
+	if !ok1 || !ok2 {
+		respondError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid token claims")
+		return
+	}
+
+	// 4. Генерируем новую пару токенов
+	newAccessToken, err := h.jwtService.GenerateAccessToken(userID, email)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate access token")
+		return
+	}
+
+	newRefreshToken, err := h.jwtService.GenerateRefreshToken(userID, email)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to generate refresh token")
+		return
+	}
+
+	// 5. Отдаем новую пару клиенту
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"access_token":  newAccessToken,
+		"refresh_token": newRefreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    int64(h.jwtService.AccessExpiry().Seconds()),
+	})
+}

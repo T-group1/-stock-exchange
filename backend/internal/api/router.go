@@ -52,6 +52,7 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	r.Post("/auth/register", authHandler.Register)
 	r.Post("/auth/login", authHandler.Login)
 	r.Get("/auth/verify", authHandler.Verify) // ИСПРАВЛЕНО ЭТАП 11: GET для перехода по ссылке из письма
+	r.Post("/auth/refresh", authHandler.Refresh)
 
 	// Публичные эндпоинты
 	r.Route("/currencies", func(r chi.Router) {

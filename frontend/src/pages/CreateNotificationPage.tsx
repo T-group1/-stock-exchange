@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../Api/apiClient";
 
-export default function CreateNotificationPage({ 
-  user, 
-  notifications, 
+export default function CreateNotificationPage({
+  user,
+  notifications,
   setNotifications
 }: any) {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function CreateNotificationPage({
     return (
       <div style={{ padding: "30px 20px", textAlign: "center" }}>
         <h3>Вы не вошли в систему</h3>
-        <button 
+        <button
           onClick={() => navigate("/auth")}
           style={{ padding: "10px 24px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
         >
@@ -32,7 +33,7 @@ export default function CreateNotificationPage({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!value || Number(value) <= 0) {
       setError("Пожалуйста, введите корректное целевое значение курса");
       return;
@@ -43,14 +44,14 @@ export default function CreateNotificationPage({
 
     try {
       const token = localStorage.getItem("token");
-      
+
       const subscriptionData = {
         currency_code: from,
         rate_value: Number(value),
         condition: condition
       };
 
-      const response = await fetch("/api/subscriptions", {
+      const response = await apiFetch("/api/subscriptions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +66,7 @@ export default function CreateNotificationPage({
       }
 
       const newSubscription = await response.json();
-      
+
       const newNotification = {
         id: newSubscription.id || Date.now(),
         from,
@@ -86,7 +87,7 @@ export default function CreateNotificationPage({
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
       <h2 style={{ marginBottom: "30px", color: "#0f172a" }}>Создание нового уведомления</h2>
-      
+
       <div style={{ background: "#fff", padding: "30px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
         <div style={{ marginBottom: "25px" }}>
           <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#475569" }}>
@@ -175,8 +176,8 @@ export default function CreateNotificationPage({
             onMouseLeave={() => setHoverSave(false)}
             disabled={loading}
             style={{
-              flex: 1, padding: "14px", background: loading ? "#a78bfa" : hoverSave ? "#6d28d9" : "#7c3aed", 
-              color: "#fff", border: "none", borderRadius: "10px", cursor: loading ? "not-allowed" : "pointer", 
+              flex: 1, padding: "14px", background: loading ? "#a78bfa" : hoverSave ? "#6d28d9" : "#7c3aed",
+              color: "#fff", border: "none", borderRadius: "10px", cursor: loading ? "not-allowed" : "pointer",
               fontWeight: "600", fontSize: "15px", transition: "all 0.2s", boxShadow: "0 4px 6px rgba(124, 58, 237, 0.15)"
             }}
           >
