@@ -36,10 +36,50 @@ type HistoryPoint struct {
 
 // HistoryResponse представляет ответ для истории курса пары
 type HistoryResponse struct {
-	Pair    string         `json:"pair"`
-	Base    string         `json:"base"`
-	Quote   string         `json:"quote"`
-	History []HistoryPoint `json:"history"`
+	Pair   string         `json:"pair"`
+	Period string         `json:"period"`
+	Data   []HistoryPoint `json:"data"`
+}
+
+// fillHistoryGaps заполняет пропуски в истории курсов (выходные, праздники)
+func fillHistoryGaps(history []HistoryPoint, days int) []HistoryPoint {
+	if len(history) == 0 {
+		return history
+	}
+
+	// Создаем карту существующих данных
+	historyMap := make(map[string]float64)
+	for _, point := range history {
+		historyMap[point.Date] = point.Rate
+	}
+
+	// Определяем диапазон дат
+	endDate := time.Now()
+	startDate := endDate.AddDate(0, 0, -days)
+
+	// Генерируем полный список дат
+	var filledHistory []HistoryPoint
+	var lastRate float64
+
+	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		dateStr := d.Format("2006-01-02")
+
+		if rate, exists := historyMap[dateStr]; exists {
+			filledHistory = append(filledHistory, HistoryPoint{
+				Date: dateStr,
+				Rate: rate,
+			})
+			lastRate = rate
+		} else if lastRate > 0 {
+			// Заполняем пропуск последним известным курсом
+			filledHistory = append(filledHistory, HistoryPoint{
+				Date: dateStr,
+				Rate: lastRate,
+			})
+		}
+	}
+
+	return filledHistory
 }
 
 // GetAll возвращает все последние курсы валют (ОПТИМИЗИРОВАНО: 1 запрос в БД)
@@ -205,15 +245,28 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	daysStr := r.URL.Query().Get("days")
-	if daysStr == "" {
-		daysStr = "30"
+	// ✅ ИСПРАВЛЕНО: Обработка параметра period вместо days
+	period := r.URL.Query().Get("period")
+	if period == "" {
+		period = "1m"
 	}
 
 	var days int
-	if _, err := fmt.Sscanf(daysStr, "%d", &days); err != nil || days <= 0 || days > 365 {
+	switch period {
+	case "1d":
+		days = 1
+	case "1w":
+		days = 7
+	case "1m":
+		days = 30
+	case "3m":
+		days = 90
+	default:
 		days = 30
 	}
+
+	// ✅ ИСПРАВЛЕНО: Обработка параметра fill_gaps
+	fillGaps := r.URL.Query().Get("fill_gaps") == "true"
 
 	startDate := time.Now().AddDate(0, 0, -days)
 	pgDate := pgtype.Date{
@@ -231,11 +284,15 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 				Rate: 1.0,
 			})
 		}
+
+		if fillGaps {
+			history = fillHistoryGaps(history, days)
+		}
+
 		respondWithJSON(w, http.StatusOK, HistoryResponse{
-			Pair:    pair,
-			Base:    base,
-			Quote:   quote,
-			History: history,
+			Pair:   pair,
+			Period: period,
+			Data:   history,
 		})
 		return
 	}
@@ -282,11 +339,14 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		if fillGaps {
+			history = fillHistoryGaps(history, days)
+		}
+
 		respondWithJSON(w, http.StatusOK, HistoryResponse{
-			Pair:    pair,
-			Base:    base,
-			Quote:   quote,
-			History: history,
+			Pair:   pair,
+			Period: period,
+			Data:   history,
 		})
 		return
 	}
@@ -362,10 +422,13 @@ func (h *RatesHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	if fillGaps {
+		history = fillHistoryGaps(history, days)
+	}
+
 	respondWithJSON(w, http.StatusOK, HistoryResponse{
-		Pair:    pair,
-		Base:    base,
-		Quote:   quote,
-		History: history,
+		Pair:   pair,
+		Period: period,
+		Data:   history,
 	})
 }

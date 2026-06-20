@@ -21,7 +21,7 @@ type CreateUserParams struct {
 	Email                    string      `json:"email"`
 	Name                     string      `json:"name"`
 	PasswordHash             string      `json:"password_hash"`
-	IsVerified               bool        `json:"is_verified"`
+	IsVerified               pgtype.Bool `json:"is_verified"`
 	VerificationToken        pgtype.Text `json:"verification_token"`
 	VerificationTokenExpires pgtype.Int8 `json:"verification_token_expires"`
 }
@@ -127,7 +127,7 @@ SET is_verified = true,
     verification_token = NULL,
     verification_token_expires = NULL
 WHERE verification_token = $1
-  AND verification_token_expires > $2
+    AND verification_token_expires > $2
 RETURNING id, email, name, password_hash, is_verified, verification_token, verification_token_expires, created_at
 `
 

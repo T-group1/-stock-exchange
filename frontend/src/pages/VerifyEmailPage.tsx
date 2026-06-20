@@ -8,7 +8,6 @@ interface VerifyEmailPageProps {
 export default function VerifyEmailPage({ setUser }: VerifyEmailPageProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
   const [status, setStatus] = useState<"waiting" | "loading" | "success" | "error">("waiting");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -23,9 +22,11 @@ export default function VerifyEmailPage({ setUser }: VerifyEmailPageProps) {
     async function verifyEmail() {
       try {
         setStatus("loading");
-        const response = await fetch(`http://localhost:8080/auth/verify?token=${token}`, {
-          method: "POST",
-          credentials: "include", 
+        
+        // ИСПРАВЛЕНО: относительный URL + метод GET
+        const response = await fetch(`/api/auth/verify?token=${token}`, {
+          method: "GET",
+          credentials: "include",
         });
 
         const data = await response.json();
@@ -35,12 +36,11 @@ export default function VerifyEmailPage({ setUser }: VerifyEmailPageProps) {
         }
 
         setUser(data.user);
-        
         setStatus("success");
+
         setTimeout(() => {
           navigate("/");
         }, 3000);
-
       } catch (err: any) {
         setStatus("error");
         setErrorMessage(err.message || "Ссылка недействительна или устарела");
@@ -53,7 +53,6 @@ export default function VerifyEmailPage({ setUser }: VerifyEmailPageProps) {
   return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
       <div style={{ background: "#fff", padding: "40px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", textAlign: "center", maxWidth: "450px", width: "100%" }}>
-        
         {status === "waiting" && (
           <>
             <h2 style={{ color: "#0f172a", marginBottom: "15px" }}>Подтвердите email</h2>
@@ -83,7 +82,6 @@ export default function VerifyEmailPage({ setUser }: VerifyEmailPageProps) {
             </button>
           </>
         )}
-
       </div>
     </div>
   );
