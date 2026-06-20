@@ -41,7 +41,7 @@ type Querier interface {
 	GetUserNotificationsCount(ctx context.Context, userID pgtype.UUID) (int64, error)
 	GetUserNotificationsUnread(ctx context.Context, arg GetUserNotificationsUnreadParams) ([]Notification, error)
 	GetUserSubscriptions(ctx context.Context, userID pgtype.UUID) ([]Subscription, error)
-	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) error
+	MarkNotificationAsRead(ctx context.Context, arg MarkNotificationAsReadParams) (Notification, error)
 	// Удаление валютной пары из избранного
 	RemoveFavorite(ctx context.Context, arg RemoveFavoriteParams) error
 	UpdateVerificationToken(ctx context.Context, arg UpdateVerificationTokenParams) (User, error)
