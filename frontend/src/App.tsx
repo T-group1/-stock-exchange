@@ -12,6 +12,18 @@ import CurrencyConverter from "./components/CurrencyConverter";
 import FavoritesList from "./components/FavoritesList";
 import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 
+// ИСПРАВЛЕНО: функция для загрузки уведомлений с бэкенда
+async function fetchNotifications() {
+  const token = localStorage.getItem("token");
+  const response = await fetch("http://localhost:8080/notifications", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error("Failed to fetch notifications");
+  return response.json();
+}
+
 export default function App() {
   const [from, setFrom] = useState("USD");
   const [to, setTo] = useState("RUB");
@@ -20,10 +32,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [favorites, setFavorites] = useState<FavoritePair[]>([]);
-  const [notifications, setNotifications] = useState<any[]>(() => {
-    const saved = localStorage.getItem("notifications");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [rates, setRates] = useState<any>({ pair: "USD_RUB", rate: 73.3591 });
 
   useEffect(() => {
@@ -50,8 +59,19 @@ export default function App() {
           console.error("Failed to load favorites:", err);
           setFavorites([]);
         });
+        
+      // ИСПРАВЛЕНО: Загрузка уведомлений с бэкенда при логине
+      fetchNotifications()
+        .then((data) => {
+          setNotifications(data.notifications || []);
+        })
+        .catch((err) => {
+          console.error("Failed to load notifications:", err);
+          setNotifications([]);
+        });
     } else {
       setFavorites([]);
+      setNotifications([]);
     }
   }, [user]);
 
