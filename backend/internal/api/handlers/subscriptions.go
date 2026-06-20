@@ -43,7 +43,7 @@ type CreateSubscriptionRequest struct {
 func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
@@ -159,7 +159,7 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
-		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "User not authenticated")
+		response.WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", http.StatusText(http.StatusUnauthorized), "User not authenticated")
 		return
 	}
 
@@ -184,7 +184,7 @@ func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subscription.UserID != userID {
-		response.WriteError(w, http.StatusForbidden, "FORBIDDEN", "You don't have permission to delete this subscription")
+		response.WriteError(w, http.StatusForbidden, "FORBIDDEN", http.StatusText(http.StatusForbidden), "You don't have permission to delete this subscription")
 		return
 	}
 
