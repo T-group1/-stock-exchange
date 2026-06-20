@@ -45,13 +45,13 @@ func (h *FavoritesHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pgUUID := pgtype.UUID{Bytes: [16]byte(userID), Valid: true}
-	codes, err := h.queries.GetUserFavoriteCodes(r.Context(), pgUUID)
+	pairs, err := h.queries.GetUserFavoritePairs(r.Context(), pgUUID)
 	if err != nil {
 		response.InternalError(w, "Failed to fetch favorites")
 		return
 	}
 
-	response.WriteSuccess(w, FavoritesResponse{FavoritePairs: codes})
+	response.WriteSuccess(w, FavoritesResponse{FavoritePairs: pairs})
 }
 
 // POST /favorites
@@ -82,7 +82,7 @@ func (h *FavoritesHandler) Add(w http.ResponseWriter, r *http.Request) {
 	pgUUID := pgtype.UUID{Bytes: [16]byte(userID), Valid: true}
 	err = h.queries.AddFavorite(r.Context(), db.AddFavoriteParams{
 		UserID:       pgUUID,
-		CurrencyCode: req.CurrencyPair,
+		CurrencyPair: req.CurrencyPair,
 	})
 	if err != nil {
 		response.InternalError(w, "Failed to add favorite")
@@ -115,7 +115,7 @@ func (h *FavoritesHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	pgUUID := pgtype.UUID{Bytes: [16]byte(userID), Valid: true}
 	err = h.queries.RemoveFavorite(r.Context(), db.RemoveFavoriteParams{
 		UserID:       pgUUID,
-		CurrencyCode: pair,
+		CurrencyPair: pair,
 	})
 	if err != nil {
 		response.InternalError(w, "Failed to remove favorite")
