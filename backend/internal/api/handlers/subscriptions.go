@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"T_Project/internal/api/middleware"
 	"T_Project/internal/api/response"
@@ -28,8 +29,8 @@ type SubscriptionResponse struct {
 	RateValue    float64 `json:"rate_value"`
 	Condition    string  `json:"condition"`
 	IsActive     bool    `json:"is_active"`
-	CreatedAt    int64   `json:"created_at"`
-	TriggeredAt  *int64  `json:"triggered_at,omitempty"`
+	CreatedAt    string  `json:"created_at"`             // ИСПРАВЛЕНО: ISO 8601 вместо int64
+	TriggeredAt  *string `json:"triggered_at,omitempty"` // ИСПРАВЛЕНО: ISO 8601 вместо *int64
 }
 
 // CreateSubscriptionRequest запрос на создание подписки
@@ -63,17 +64,21 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	for _, s := range subscriptions {
 		rateFloat, _ := s.RateValue.Float64Value()
 
+		// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
+		createdAt := time.Unix(s.CreatedAt, 0).UTC().Format(time.RFC3339)
+
 		resp := SubscriptionResponse{
 			ID:           s.ID.String(),
 			CurrencyCode: s.CurrencyCode,
 			RateValue:    rateFloat.Float64,
 			Condition:    s.Condition,
 			IsActive:     s.IsActive.Bool,
-			CreatedAt:    s.CreatedAt,
+			CreatedAt:    createdAt,
 		}
 
 		if s.TriggeredAt.Valid {
-			resp.TriggeredAt = &s.TriggeredAt.Int64
+			triggeredAt := time.Unix(s.TriggeredAt.Int64, 0).UTC().Format(time.RFC3339)
+			resp.TriggeredAt = &triggeredAt
 		}
 
 		result = append(result, resp)
@@ -109,10 +114,12 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "Currency code is required")
 		return
 	}
+
 	if req.RateValue <= 0 {
 		response.BadRequest(w, "Rate value must be greater than 0")
 		return
 	}
+
 	if req.Condition != "above" && req.Condition != "below" {
 		response.BadRequest(w, "Condition must be 'above' or 'below'")
 		return
@@ -145,13 +152,16 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rateFloat, _ := subscription.RateValue.Float64Value()
 
+	// ИСПРАВЛЕНО: конвертируем Unix timestamp в ISO 8601
+	createdAt := time.Unix(subscription.CreatedAt, 0).UTC().Format(time.RFC3339)
+
 	response.WriteCreated(w, SubscriptionResponse{
 		ID:           subscription.ID.String(),
 		CurrencyCode: subscription.CurrencyCode,
 		RateValue:    rateFloat.Float64,
 		Condition:    subscription.Condition,
 		IsActive:     subscription.IsActive.Bool,
-		CreatedAt:    subscription.CreatedAt,
+		CreatedAt:    createdAt,
 	})
 }
 
