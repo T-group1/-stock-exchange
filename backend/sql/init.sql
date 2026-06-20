@@ -61,12 +61,12 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     quiet_hours_end VARCHAR(5)
 );
 
--- Таблица избранных валют
+-- Таблица избранных валютных пар
 CREATE TABLE IF NOT EXISTS favorites (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    currency_code VARCHAR(3) NOT NULL REFERENCES currencies(code) ON DELETE CASCADE,
+    currency_pair VARCHAR(7) NOT NULL, -- Формат: "USD_RUB" (7 символов)
     created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW()))::BIGINT,
-    PRIMARY KEY (user_id, currency_code)
+    PRIMARY KEY (user_id, currency_pair)
 );
 
 -- Индексы для производительности
