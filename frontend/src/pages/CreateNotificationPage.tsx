@@ -1,22 +1,36 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiFetch } from "../Api/apiClient";
 
 export default function CreateNotificationPage({
   user,
   notifications,
   setNotifications,
-  rates
+  rates // ДОБАВИЛИ rates
 }: any) {
   const navigate = useNavigate();
-  const [from, setFrom] = useState("USD");
-  const [to, setTo] = useState("RUB");
+  const location = useLocation(); // Достаем данные от роутера
+
+  // Берем валюты из кнопки конвертера, если они есть. Иначе ставим USD и RUB
+  const [from, setFrom] = useState(location.state?.from || "USD");
+  const [to, setTo] = useState(location.state?.to || "RUB");
+
   const [condition, setCondition] = useState("above");
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [hoverBack, setHoverBack] = useState(false);
   const [hoverSave, setHoverSave] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Рассчитываем текущий курс
+  const fromRate = rates?.[from] || 1;
+  const toRate = rates?.[to] || 1;
+  const currentRate = rates?.pair === `${from}_${to}` && rates?.rate
+    ? Number(rates.rate).toFixed(4)
+    : (fromRate / toRate).toFixed(4);
+
+  // Генерируем полный список доступных валют
+  const availableCurrencies = rates ? Object.keys(rates).filter(key => key !== 'date' && key !== 'pair' && key !== 'rate') : ["USD", "EUR", "RUB", "CNY", "GBP", "JPY"];
 
   if (!user) {
     return (
@@ -44,8 +58,6 @@ export default function CreateNotificationPage({
     setError("");
 
     try {
-      const token = localStorage.getItem("token");
-
       const subscriptionData = {
         currency_code: from,
         rate_value: Number(value),
@@ -55,8 +67,7 @@ export default function CreateNotificationPage({
       const response = await apiFetch("/api/subscriptions", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(subscriptionData)
       });
@@ -85,8 +96,6 @@ export default function CreateNotificationPage({
     }
   };
 
-  const availableCurrencies = rates ? Object.keys(rates).filter(key => key !== 'date' && key !== 'pair' && key !== 'rate') : ["USD", "EUR", "RUB", "CNY", "GBP", "JPY"];
-
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
       <h2 style={{ marginBottom: "30px", color: "#0f172a" }}>Создание нового уведомления</h2>
@@ -101,7 +110,6 @@ export default function CreateNotificationPage({
             onChange={(e) => setFrom(e.target.value)}
             style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "16px", outline: "none" }}
           >
-            {/* Динамический список */}
             {availableCurrencies.map((currency) => (
               <option key={`from-${currency}`} value={currency}>{currency}</option>
             ))}
@@ -117,7 +125,6 @@ export default function CreateNotificationPage({
             onChange={(e) => setTo(e.target.value)}
             style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "16px", outline: "none" }}
           >
-            {/* Динамический список (можно оставить только RUB, если бэкенд поддерживает конвертацию только к рублю, или сделать полный список) */}
             {availableCurrencies.map((currency) => (
               <option key={`to-${currency}`} value={currency}>{currency}</option>
             ))}
@@ -139,8 +146,11 @@ export default function CreateNotificationPage({
         </div>
 
         <div style={{ marginBottom: "25px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#475569" }}>
-            Целевой курс валюты:
+          <label style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600", color: "#475569" }}>
+            <span>Целевой курс валюты:</span>
+            <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "normal" }}>
+              Текущий курс: 1 {from} = <strong>{currentRate}</strong> {to}
+            </span>
           </label>
           <input
             type="number"
