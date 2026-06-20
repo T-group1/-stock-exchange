@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
 import { fetchRates } from "./Api/currencyApi";
-
+import { fetchFavorites, FavoritePair } from "./Api/favoritesApi";
 import Header from "./components/Header";
 import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -15,17 +14,11 @@ import CurrencyDetailPage from "./pages/CurrencyDetailPage";
 export default function App() {
   const [from, setFrom] = useState("USD");
   const [to, setTo] = useState("RUB");
-
   const [user, setUser] = useState<any>(() => {
     const saved = localStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
   });
-
-  const [favorites, setFavorites] = useState<any[]>(() => {
-    const saved = localStorage.getItem("favorites");
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [favorites, setFavorites] = useState<FavoritePair[]>([]);
   const [notifications, setNotifications] = useState<any[]>(() => {
     const saved = localStorage.getItem("notifications");
     return saved ? JSON.parse(saved) : [];
@@ -40,9 +33,26 @@ export default function App() {
     }
   }, [user]);
 
+  // Загрузка favorites с бэкенда при логине
   useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-  }, [favorites]);
+    if (user) {
+      fetchFavorites()
+        .then((data) => {
+          // Конвертируем строки формата "USD_RUB" в объекты {from: "USD", to: "RUB"}
+          const pairs: FavoritePair[] = data.favorite_pairs.map((pair: string) => {
+            const [from, to] = pair.split("_");
+            return { from, to };
+          });
+          setFavorites(pairs);
+        })
+        .catch((err) => {
+          console.error("Failed to load favorites:", err);
+          setFavorites([]);
+        });
+    } else {
+      setFavorites([]);
+    }
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem("notifications", JSON.stringify(notifications));
@@ -63,55 +73,58 @@ export default function App() {
   return (
     <Router>
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
-
         <Header user={user} />
-
         <Routes>
-          <Route path="/" element={
-            <div>
-              <CurrencyConverter
-                rates={rates}
-                user={user}
-                favorites={favorites}
-                setFavorites={setFavorites}
-                from={from}
-                setFrom={setFrom}
-                to={to}
-                setTo={setTo}
-              />
-
-              {user && (
-                <FavoritesList
+          <Route
+            path="/"
+            element={
+              <div>
+                <CurrencyConverter
+                  rates={rates}
+                  user={user}
                   favorites={favorites}
                   setFavorites={setFavorites}
+                  from={from}
                   setFrom={setFrom}
+                  to={to}
                   setTo={setTo}
                 />
-              )}
-            </div>
-          } />
-
+                {user && (
+                  <FavoritesList
+                    favorites={favorites}
+                    setFavorites={setFavorites}
+                    setFrom={setFrom}
+                    setTo={setTo}
+                  />
+                )}
+              </div>
+            }
+          />
           <Route path="/auth" element={<AuthPage setUser={setUser} />} />
-
           <Route path="/verify-email" element={<VerifyEmailPage setUser={setUser} />} />
-
-          <Route path="/profile" element={
-            <NotificationManagerPage
-              user={user}
-              setUser={setUser}
-              notifications={notifications}
-              setNotifications={setNotifications}
-              setFavorites={setFavorites}
-            />
-          } />
-
-          <Route path="/create-notification" element={
-            <CreateNotificationPage
-              user={user}
-              notifications={notifications}
-              setNotifications={setNotifications}
-              rates={rates} />
-          } />
+          <Route
+            path="/profile"
+            element={
+              <NotificationManagerPage
+                user={user}
+                setUser={setUser}
+                notifications={notifications}
+                setNotifications={setNotifications}
+                setFavorites={setFavorites}
+              />
+            }
+          />
+          <Route
+            path="/create-notification"
+            element={
+              <CreateNotificationPage
+                user={user}
+                notifications={notifications}
+                setNotifications={setNotifications}
+                rates={rates}
+              />
+            }
+          />
           <Route path="/currency/:pair" element={<CurrencyDetailPage rates={rates} />} />
         </Routes>
       </div>

@@ -34,6 +34,7 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	currenciesHandler := handlers.NewCurrenciesHandler(queries)
 	ratesHandler := handlers.NewRatesHandler(queries)
 	convertHandler := handlers.NewConvertHandler(queries)
+	favoritesHandler := handlers.NewFavoritesHandler(queries)
 
 	// Создаём JWT сервис для auth middleware
 	jwtService := auth.NewJWTService(
@@ -68,6 +69,12 @@ func Router(queries db.Querier, cfg *config.Config) http.Handler {
 	// Защищённые эндпоинты (требуют авторизации)
 	r.Group(func(r chi.Router) {
 		r.Use(customMiddleware.Auth(jwtService))
+
+		r.Route("/favorites", func(r chi.Router) {
+			r.Get("/", favoritesHandler.List)
+			r.Post("/", favoritesHandler.Add)
+			r.Delete("/{pair}", favoritesHandler.Remove)
+		})
 
 		r.Route("/notifications", func(r chi.Router) {
 			r.Get("/", notificationsHandler.List)
