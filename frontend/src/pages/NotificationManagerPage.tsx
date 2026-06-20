@@ -70,14 +70,9 @@ export default function NotificationManagerPage({
 
   // ИСПРАВЛЕНО: удаляем подписку и на бэкенде тоже
   const removeNotification = async (id: string) => {
-    const token = localStorage.getItem("token");
-
     try {
       const response = await apiFetch(`/api/subscriptions/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        method: "DELETE"
       });
 
       if (!response.ok) {
@@ -87,9 +82,12 @@ export default function NotificationManagerPage({
       console.error("Error deleting subscription:", err);
     }
 
-    // Удаляем из локального состояния в любом случае
+    // Удаляем из локального состояния
     setNotifications(notifications.filter((n: any) => n.id !== id));
   };
+
+  const activeNotifications = notifications.filter((n: any) => n.is_active !== false);
+  const inactiveNotifications = notifications.filter((n: any) => n.is_active === false);
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
@@ -144,35 +142,62 @@ export default function NotificationManagerPage({
         </button>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0 }}>Мои уведомления </h2>
-      </div>
-
-      {notifications.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8", border: "2px dashed #e2e8f0", borderRadius: "12px" }}>
-          У вас пока нет активных уведомлений.
-        </div>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {notifications.map((n: any) => (
-            <li key={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", marginBottom: "10px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-              <div>
-                <strong style={{ display: "block" }}>{n.from} / {n.to}</strong>
-                <span style={{ fontSize: "14px", color: "#64748b" }}>
-                  {n.condition === "above" ? "Повысится до..." : "Понизится до..."} {n.value}
-                </span>
+      <div>
+        <h3 style={{ margin: "30px 0 15px 0", color: "#1e293b", fontSize: "20px" }}>Активные уведомления</h3>
+        {activeNotifications.length === 0 ? (
+          <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "10px", border: "2px dashed #e2e8f0" }}>
+            Нет активных уведомлений.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {activeNotifications.map((n: any) => (
+              <div key={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                <div>
+                  <div style={{ fontWeight: "bold", color: "#0f172a", fontSize: "16px" }}>{n.from} / {n.to}</div>
+                  <div style={{ fontSize: "14px", color: "#64748b", marginTop: "4px" }}>
+                    {n.condition === "above" ? "Повысится до..." : "Понизится до..."} {n.value}
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeNotification(n.id)} // УБЕДИСЬ, ЧТО ФУНКЦИЯ УДАЛЕНИЯ НАЗЫВАЕТСЯ ТАК
+                  style={{ padding: "8px 16px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", transition: "0.2s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "#fca5a5"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "#fee2e2"}
+                >
+                  Удалить
+                </button>
               </div>
+            ))}
+          </div>
+        )}
 
-              <button
-                onClick={() => removeNotification(n.id)}
-                style={{ background: "#fee2e2", border: "none", color: "#ef4444", padding: "8px 12px", borderRadius: "6px", cursor: "pointer" }}
-              >
-                Удалить
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {/* Блок неактивных (показываем только если они есть) */}
+        {inactiveNotifications.length > 0 && (
+          <>
+            <h3 style={{ margin: "40px 0 15px 0", color: "#94a3b8", fontSize: "18px" }}>Исполненные уведомления</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {inactiveNotifications.map((n: any) => (
+                <div key={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "10px", opacity: 0.6 }}>
+                  <div>
+                    <div style={{ fontWeight: "bold", color: "#64748b", fontSize: "16px", textDecoration: "line-through" }}>{n.from} / {n.to}</div>
+                    <div style={{ fontSize: "14px", color: "#94a3b8", marginTop: "4px" }}>
+                      Сработало на отметке {n.value}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeNotification(n.id)}
+                    style={{ padding: "8px 16px", background: "#e2e8f0", color: "#64748b", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", transition: "0.2s" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#cbd5e1"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "#e2e8f0"}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
